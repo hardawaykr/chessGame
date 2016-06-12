@@ -1,8 +1,20 @@
-class Chess:
+class Chess(object):
     def __init__(self):
         self.board = deepcopy(standard_board)
 
-class Piece:
+    def valid_space(self, side, x, y):
+        piece = self.board[x][y]
+        return not piece or (piece and piece.side != side)
+
+    def add_piece(self, x, y, piece):
+        self.board[x][y] = piece
+        piece.x = x
+        piece.y = y
+
+    def get_piece(self, x, y):
+        return board[x][y]
+
+class Piece(object):
     def __init__(self, side, x, y):
         self.side = side
         self.x = x
@@ -15,60 +27,59 @@ class Pawn(Piece):
     def move(self, board, x, y):
         xDiff = abs(self.x - x) 
         yDiff = abs(self.y - y)
-        piece = board[x][y] 
 
         if xDiff == 1 ^ yDiff == 1:
-            if not piece or piece and piece.side != self.side:
-                board[x][y] = self
-                self.x = x
-                self.y = y
-        elif xDiff == 2 ^ yDiff == 2:
-            if board == standard_board:
-                board[x][y] = self
+            if board.valid_space(self.side, x, y):
+                board.add_piece(x, y, self)
+        elif (xDiff == 2 and horizontal_path_clear(self.x, self.y, x, board))  ^ (yDiff == 2 and vertical_path_clear(self.x, self.y, y, board)) :
+            if board == standard_board and board.valid_space(self.side, x, y):
+                board.add_piece(x, y, self)
 
 class Rook(Piece):
     def move(self, board, x, y):
         xDiff = abs(self.x - x) 
         yDiff = abs(self.y - y)
-        piece = board[x][y] 
 
-        if piece and piece.side != self.side:
+        if board.valid_space(self.side, x, y):
             if yDiff == 0 and horizontal_path_clear(self.x, self.y, x, board):
-                self.x = x
-                self.y = y
-                board[x][y] = self
-            elif xDiff == 0 and vertical_path_clear(self.x, self.y, y, board)
-                self.x = x
-                self.y = y
-                board[x][y] = self
+                board.add_piece(x, y, self)
+            elif xDiff == 0 and vertical_path_clear(self.x, self.y, y, board):
+                board.add_piece(x, y, self)
 
 class Knight(Piece):
     def move(self, board, x, y):
         xDiff = abs(self.x - x) 
         yDiff = abs(self.y - y)
-        piece = board[x][y] 
 
-        if piece and piece.side != self.side or not piece:
+        if board.valid_side(self.side, x, y):
             if xDiff == 2 and yDiff == 1:
-                self.x = x
-                self.y = y
-                board[x][y] = self
+                board.add_piece(x, y, self)
             elif xDiff == 1 and yDiff == 2:
-                self.x = x
-                self.y = y
-                board[x][y] = self
+                board.add_piece(x, y, self)
 
 class Bishop(Piece):
     def move(self, board, x, y):
-        pass
+        xDiff = abs(self.x - x) 
+        yDiff = abs(self.y - y)
+        
+        if xDiff == yDiff and diagonal_path_clear(self.x, self.y, x, y, board):
+            if board.valid_space(self.side, x, y):
+                board.add_piece(x, y, self)
 
 class Queen(Piece):
     def move(self, board, x, y):
-        pass
-
+        piece = board.get_piece(x, y)
+        if board.valid_space(self.side, x, y) and any_path_clear(self.x, self.y, x, y, board):
+            board.add_piece(x, y, self)
+            
 class King(Piece):
     def move(self, board, x, y):
-        pass
+        xDiff = abs(self.x - x) 
+        yDiff = abs(self.y - y)
+        
+        if xDiff <= 1 and yDiff <= 1:
+            if board.valid_space(self.side, x, y):
+                board.add_piece(x, y, self)
 
 standard_board = [[Rook('w', 0, 0), Pawn('w', 0, 1), None, None, None, None, Pawn('b', 0, 6), Rook('b', 0, 7)],
                   [Knight('w', 1, 0), Pawn('w', 1, 1), None, None, None, None, Pawn('b', 1, 6), Knight('b', 1, 7)],      
@@ -84,7 +95,7 @@ def horizontal_path_clear(s_x, s_y, x, board):
     xDiff = x - s_x
     s = 1 if xDiff > 0 else -1
     for i in range(abs(xDiff)):
-        if board[s_x + s * (i + 1)][s_y]:
+        if board.get_piece(s_x + s * (i + 1), s_y):
             return False
 
     return True
@@ -93,7 +104,7 @@ def vertical_path_clear(s_x, s_y, y, board):
     yDiff = y - s_y
     s = 1 if yDiff > 0 else -1
     for i in range(abs(yDiff)):
-        if board[s_x][s_y + s * (i + 1)]:
+        if board.get_piece(s_x, s_y + s * (i + 1)):
             return False
 
     return True
@@ -105,7 +116,10 @@ def diagonal_path_clear(s_x, s_y, x, y, board):
     s = 1 if xDiff > 0 else -1
     
     for i in range(xDiff):
-        if board[s_x + s * (i + 1)][s_y + s * (i + 1)]:
+        if board.get_piece(s_x + s * (i + 1), s_y + s * (i + 1)):
             return False
 
     return True
+
+def any_valid_path(s_x, s_y, x, y, board):
+    return  diagonal_path_clear(s_x, s_y, x, y, board) or horizontal_path_clear(s_x, s_y, x, board) or vertical_path_clear(s_x, s_y, y, board)
