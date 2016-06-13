@@ -1,6 +1,11 @@
+from copy import deepcopy
+WIDTH = 8
+HEIGHT = 8
 class Chess(object):
     def __init__(self):
         self.board = deepcopy(standard_board)
+        self.castling_w = True
+        self.castling_b = True
 
     def valid_space(self, side, x, y):
         piece = self.board[x][y]
@@ -12,7 +17,7 @@ class Chess(object):
         piece.y = y
 
     def get_piece(self, x, y):
-        return board[x][y]
+        return self.board[x][y]
 
 class Piece(object):
     def __init__(self, side, x, y):
@@ -21,65 +26,123 @@ class Piece(object):
         self.y = y
 
     def move(self, board, x, y):
-        pass
+        pass 
+        
+    def can_move(self, board, x, y):
+        return False
+
+    def possible_moves(self, board):
+        return set()
+
+    def get_x(self):
+        return self.x
+
+    def get_y(self):
+        return self.y
+
 
 class Pawn(Piece):
-    def move(self, board, x, y):
+    def __init__(self, side, x, y):
+        super().__init__(side, x, y)
+        self.en_passant = True
+
+    def can_move(self, board, x, y):
         xDiff = abs(self.x - x) 
         yDiff = abs(self.y - y)
-
-        if xDiff == 1 ^ yDiff == 1:
+        
+        if (xDiff == 1) ^ (yDiff == 1):
             if board.valid_space(self.side, x, y):
-                board.add_piece(x, y, self)
-        elif (xDiff == 2 and horizontal_path_clear(self.x, self.y, x, board))  ^ (yDiff == 2 and vertical_path_clear(self.x, self.y, y, board)) :
-            if board == standard_board and board.valid_space(self.side, x, y):
-                board.add_piece(x, y, self)
+                return True
+        elif yDiff == 2 and self.en_passant and vertical_path_clear(self.x, self.y, y, board) and board.valid_space(self.side, x, y):
+            return True
+        return False
+
+    def move(self, board, x, y):
+        if self.can_move(board, x, y):
+            self.en_passant = False
+            board.add_piece(x, y, self)
+
+    def possible_moves(self, board):
+        moves = set()
+        positions = [(self.x, self.y + 1), (self.x + 1, self.y), (self.x, self.y - 1), (self.x - 1, self.y)]
+        for (x, y) in positions:
+            if 0 <= x < WIDTH and 0 <= y < HEIGHT and self.can_move(board, x, y):
+                moves.add((x, y)) 
+
+        if self.en_passant and self.y + 2 < HEIGHT and self.can_move(board, self.x, self.y + 2):
+            moves.add((self.x, self.y + 2))
+        return moves
 
 class Rook(Piece):
-    def move(self, board, x, y):
+    def can_move(self, board, x, y):
         xDiff = abs(self.x - x) 
         yDiff = abs(self.y - y)
 
         if board.valid_space(self.side, x, y):
             if yDiff == 0 and horizontal_path_clear(self.x, self.y, x, board):
-                board.add_piece(x, y, self)
+                return True
             elif xDiff == 0 and vertical_path_clear(self.x, self.y, y, board):
-                board.add_piece(x, y, self)
+                return True
+        return False
+
+    def move(self, board, x, y):
+        if self.can_move(board, x, y):
+            board.add_piece(x, y, self)
 
 class Knight(Piece):
-    def move(self, board, x, y):
+    def can_move(self, board, x, y):
         xDiff = abs(self.x - x) 
         yDiff = abs(self.y - y)
 
         if board.valid_side(self.side, x, y):
             if xDiff == 2 and yDiff == 1:
-                board.add_piece(x, y, self)
+                return True
             elif xDiff == 1 and yDiff == 2:
-                board.add_piece(x, y, self)
+                return True
+        return False
+
+    def move(self, board, x, y):
+        if self.can_move(board, x, y):
+            board.add_piece(x, y, self)
 
 class Bishop(Piece):
-    def move(self, board, x, y):
+    def can_move(self, board, x, y):
         xDiff = abs(self.x - x) 
         yDiff = abs(self.y - y)
         
         if xDiff == yDiff and diagonal_path_clear(self.x, self.y, x, y, board):
             if board.valid_space(self.side, x, y):
-                board.add_piece(x, y, self)
+                return True
+        return False
+
+    def move(self, board, x, y):
+        if self.can_move(board, x, y):
+            board.add_piece(x, y, self)
 
 class Queen(Piece):
-    def move(self, board, x, y):
+    def can_move(self, board, x, y):
         piece = board.get_piece(x, y)
         if board.valid_space(self.side, x, y) and any_path_clear(self.x, self.y, x, y, board):
+            return True
+        return False
+
+    def move(self, board, x, y):
+        if self.can_move(board, x, y):
             board.add_piece(x, y, self)
             
 class King(Piece):
-    def move(self, board, x, y):
+    def can_move(self, board, x, y):
         xDiff = abs(self.x - x) 
         yDiff = abs(self.y - y)
         
         if xDiff <= 1 and yDiff <= 1:
             if board.valid_space(self.side, x, y):
-                board.add_piece(x, y, self)
+                return True
+        return False
+
+    def move(self, board, x, y):
+        if self.can_move(board, x, y):
+            board.add_piece(x, y, self)
 
 standard_board = [[Rook('w', 0, 0), Pawn('w', 0, 1), None, None, None, None, Pawn('b', 0, 6), Rook('b', 0, 7)],
                   [Knight('w', 1, 0), Pawn('w', 1, 1), None, None, None, None, Pawn('b', 1, 6), Knight('b', 1, 7)],      
@@ -103,8 +166,8 @@ def horizontal_path_clear(s_x, s_y, x, board):
 def vertical_path_clear(s_x, s_y, y, board):
     yDiff = y - s_y
     s = 1 if yDiff > 0 else -1
-    for i in range(abs(yDiff)):
-        if board.get_piece(s_x, s_y + s * (i + 1)):
+    for i in range(1, abs(yDiff)):
+        if board.get_piece(s_x, s_y + s * i):
             return False
 
     return True
