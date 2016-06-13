@@ -7,3 +7,4 @@ from chess.chess import *
 
 def testPawn():
     new_game = Chess() 
+    `
