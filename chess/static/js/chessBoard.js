@@ -1,5 +1,5 @@
 var board1 = ChessBoard('board1', {
-    draggable: true,
+    draggable:  true,
     dropOffBoard: 'trash'
 });
 
