@@ -93,11 +93,8 @@ ENV/
 
 chess/CMakeCache.txt
 chess/CMakeFiles/
-chess/chess
-chess/chess.c
 chess/chess.dSYM/
 chess/cmake_install.cmake
-chess/dbg.h
 chess/libgtest.a
 chess/libgtest_main.a
 outline.txt

@@ -15,5 +15,26 @@ int main(void) {
     } else {
         printf("Success.\n");
     }
+
+    uint64_t knight_w_moves = knight_move_board(b->knight_w, b->white);
+    if (knight_w_moves != 0x0000000000A50000) {
+        printf("Error knight board %" PRIu64 "\n", knight_w_moves);
+    } else {
+        printf("knight success \n");
+    }
+
+    uint64_t white_pawn_moves = pawn_w_move_board(b->pawn_w, b->white, b->black);
+    if (white_pawn_moves != 0x00000000FFFF0000) {
+        printf("Pawn error %" PRIu64 "\n", white_pawn_moves);
+    } else {
+        printf("Pawn success \n");
+    }
+
+    uint64_t black_pawn_moves = pawn_b_move_board(b->pawn_b, b->white, b->black);
+    if (black_pawn_moves != 0x0000FFFF00000000) {
+        printf("Pawn error %" PRIu64 "\n", black_pawn_moves);
+    } else {
+        printf("Pawn success \n");
+    }
     return 0;
 }    
