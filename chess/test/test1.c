@@ -36,5 +36,28 @@ int main(void) {
     } else {
         printf("Pawn success \n");
     }
+    uint64_t white_rook_moves = rook_move_board(b->rook_w, b->white, b->black);
+    if (white_rook_moves != 0) {
+        printf("Rook error %" PRIu64 "\n", white_pawn_moves);
+    } else {
+        printf("Rook valid. \n");
+    }
+    uint64_t test_rook = 0x0000000008000000;
+    uint64_t test_white = 0x0000000048000000;
+    uint64_t test_black = 0x0008000000000000;
+    uint64_t rook_moves = rook_move_board(test_rook, 0, 0);
+    if (rook_moves != 0x08080808F7080808) {
+       printf("Test Rook error %" PRIu64 "\n", rook_moves);
+    } else {
+        printf("Valid rook board. \n");
+    }
+    rook_moves = rook_move_board(test_rook, test_white, test_black);
+
+    if (rook_moves != 0x0008080837080808) {
+       printf("Test Rook error %" PRIu64 "\n", rook_moves);
+    } else {
+        printf("Valid rook board. \n");
+    }
+    
     return 0;
 }    
