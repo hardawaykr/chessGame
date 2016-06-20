@@ -58,6 +58,33 @@ int main(void) {
     } else {
         printf("Valid rook board. \n");
     }
+ 
+    uint64_t white_bishop_moves = bishop_move_board(b->bishop_w, b->white, b->black);
+    if (white_bishop_moves != 0) {
+       printf("Test bishop error %" PRIu64 "\n", white_bishop_moves);
+    } else {
+        printf("Success on bishop\n");
+    }
     
+    uint64_t test_bishop = 0x0000000008000000;
+    uint64_t empty = 0;
+    uint64_t bishop_board = bishop_move_board(test_bishop, test_bishop, empty);
+
+    if (bishop_board != 0x8041221400142241) {
+       printf("Test bishop error %" PRIu64 "\n", bishop_board);
+    } else {
+        printf("Success on bishop\n");
+    }
+
+    test_bishop = 0x0000000008000000;
+    uint64_t black = 0x0000001000000000;
+    bishop_board = bishop_move_board(test_bishop, test_bishop, black);
+
+    if (bishop_board != 0x0001021400142241) {
+       printf("Test bishop error %" PRIu64 "\n", bishop_board);
+    } else {
+        printf("Success on bishop\n");
+    }
+
     return 0;
 }    

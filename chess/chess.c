@@ -144,6 +144,41 @@ uint64_t rook_move_board(uint64_t rook, uint64_t own_side, uint64_t other_side) 
     return north_ray | south_ray | east_ray | west_ray;
 }
 
+uint64_t bishop_move_board(uint64_t bishop, uint64_t own_side, uint64_t other_side) {
+    uint64_t ne_ray = ((bishop & file_h) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+
+    uint64_t se_ray = ((bishop & file_h) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+
+    uint64_t sw_ray = ((bishop & file_a) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+
+    uint64_t nw_ray = ((bishop & file_a) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+
+    return ne_ray | se_ray | sw_ray | nw_ray;
+}
 
 //    board* new_game = malloc(sizeof(struct board));
 //    fill_standard(new_game);
