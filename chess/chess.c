@@ -180,9 +180,6 @@ uint64_t bishop_move_board(uint64_t bishop, uint64_t own_side, uint64_t other_si
     return ne_ray | se_ray | sw_ray | nw_ray;
 }
 
-//    board* new_game = malloc(sizeof(struct board));
-//    fill_standard(new_game);
-//    printf("Test of pawn %" PRIu64 "\n", new_game->pawn_w);
-//    free(new_game);
-//    return 0;
-//}
+uint64_t queen_move_board(uint64_t queen, uint64_t own_side, uint64_t other_side) {
+    return bishop_move_board(queen, own_side, other_side) | rook_move_board(queen, own_side, other_side);
+}

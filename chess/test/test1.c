@@ -86,5 +86,19 @@ int main(void) {
         printf("Success on bishop\n");
     }
 
+    uint64_t queen_moves = queen_move_board(b->queen_b, b->black, b->white); 
+
+    if (queen_moves != 0) {
+       printf("Queen 1 error %" PRIu64 "\n", queen_moves);
+    } else {
+        printf("Success on queen 1\n");
+    }
+
+    queen_moves = queen_move_board(0x0000000008000000, 0x0000000002002000, 0x8008000000000000); 
+    if (queen_moves != 0x80492A1CF41C0A09) {
+       printf("Queen 2 error %" PRIu64 "\n", queen_moves);
+    } else {
+        printf("Success on queen 2\n");
+    }
     return 0;
 }    
