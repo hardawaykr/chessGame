@@ -100,5 +100,6 @@ int main(void) {
     } else {
         printf("Success on queen 2\n");
     }
+
     return 0;
 }    

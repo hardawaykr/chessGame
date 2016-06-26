@@ -29,6 +29,14 @@ typedef struct board {
 
     uint64_t black;
     uint64_t white;
+
+    // True if either rook and king is in correct position to castle.
+    // Does not track whether there are pieces obstructing 
+    int castle_w;
+    int castle_b;
+
+    int check_w;
+    int check_b;
 } board;
 
 
@@ -49,10 +57,15 @@ int fill_standard(board* b) {
     b->white = b->pawn_w | b->queen_w | b->king_w | b->bishop_w | b->knight_w | b->rook_w;
     b->black = b->pawn_b | b->queen_b | b->king_b | b->bishop_b | b->knight_b | b->rook_b;
 
+    b->castle_w = false;
+    b->castle_b = false;
+
+    b->check_w = false;
+    b->check_b = false;
     return 0;
 }
 
-uint64_t king_move_board(uint64_t king_board, uint64_t own_side) {
+uint64_t king_move_board(uint64_t king_board, uint64_t other_side, uint64_t own_side, int castle) {
     uint64_t pos_1 = king_board << 8;
     uint64_t pos_2 = (king_board & file_h) << 9;
     uint64_t pos_3 = (king_board & file_h) << 1;
@@ -62,7 +75,18 @@ uint64_t king_move_board(uint64_t king_board, uint64_t own_side) {
     uint64_t pos_7 = (king_board & file_a) >> 1;
     uint64_t pos_8 = (king_board & file_a) << 7;
 
-    return (pos_1 | pos_2 | pos_3 | pos_4 | pos_5 | pos_6 | pos_7 | pos_8) & ~own_side;
+    uint64_t pos_9 = 0;
+    uint64_t pos_10 = 0;
+    if (castle) {
+        pos_9 = ((king_board & file_a) >> 1) & ~other_side & ~own_side;
+        pos_9 = ((pos_9 & file_a) >> 1) & ~other_side;
+
+        pos_10 = ((king_board & file_h) << 1) & ~other_side & ~ ownside;
+        pos_10 = ((pos_9 & file_h) << 1) & ~other_side;
+
+    } 
+
+    return (pos_1 | pos_2 | pos_3 | pos_4 | pos_5 | pos_6 | pos_7 | pos_8 | pos_9 | pos_10) & ~own_side;
 }
 
 uint64_t knight_move_board(uint64_t knight, uint64_t own_side) {
