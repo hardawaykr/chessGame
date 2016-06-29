@@ -9,7 +9,7 @@ int main(void) {
     if (b->white != 0x000000000000FFFF) {
         printf("Error bad white side %" PRIu64 "\n", b->white);
     }
-    uint64_t king_w_moves = king_move_board(b->king_w, b->white); 
+    uint64_t king_w_moves = king_move_board(b->king_w, b->white, b->black, b->castle_w_l, b->castle_w_r); 
     if (king_w_moves != 0) {
         printf("Error invalid move board %" PRIu64 "\n", king_w_moves);
     } else {
@@ -100,6 +100,20 @@ int main(void) {
     } else {
         printf("Success on queen 2\n");
     }
-
+    
+    // King castle test
+    uint64_t king_moves = king_move_board(0x1000000000000000, 0x1000000000000000, 0x8000000000000000, 1, 0);
+    if (king_moves != 0x6838000000000000) {
+       printf("Incorrect king castle test %" PRIu64 "\n", king_moves);
+    } else {
+        printf("Success on king castle test\n");
+    }
+        
+    king_moves = king_move_board(0x1000000000000000, 0x1000000000000000, 0x8100000000000000, 1, 1);
+    if (king_moves != 0x6C38000000000000) {
+       printf("Incorrect king castle test 2 %" PRIu64 "\n", king_moves);
+    } else {
+        printf("Success on king castle test 2\n");
+    }
     return 0;
 }    
