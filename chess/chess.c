@@ -213,3 +213,20 @@ uint64_t bishop_move_board(uint64_t bishop, uint64_t own_side, uint64_t other_si
 uint64_t queen_move_board(uint64_t queen, uint64_t own_side, uint64_t other_side) {
     return bishop_move_board(queen, own_side, other_side) | rook_move_board(queen, own_side, other_side);
 }
+
+
+board* parse_fen(char *fen) {
+    printf("here");
+    board *b = malloc(sizeof(board));
+    char fields[6][100]; 
+    for (int i = 0; i < 6; i++) {
+        printf("here");
+        char* token = strtok(fen, " ");
+        printf("The %d token is %s\n", i, token);
+        if (!token) {
+            printf("Invalid fen, must have 6 fields separated by spaces.\n");
+        }
+        fields[i] = *token;
+    }
+    return b;
+}
