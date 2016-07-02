@@ -300,8 +300,51 @@ int is_attacked_b(uint64_t piece_b, board* b) {
     return (attack_board_w(b) & piece_b) ? 1: 0; 
 }
 
+int in_check_w(board* b) {
+    return is_attacked_w(b->king_w, b);    
+}
+
+int in_check_b(board* b) {
+    return is_attacked_b(b->king_b, b);    
+}
+
+board* get_intersecting_w(board *b, uint64_t spaces) {
+    board* new_board = board_alloc();
+    new_board->pawn_w = b->pawn_w & spaces;
+    new_board->queen_w = b->queen_w & spaces;
+    new_board->king_w = b->king_w & spaces;
+    new_board->rook_w = b->rook_w & spaces;
+    new_board->knight_w = b->knight_w & spaces;
+    new_board->bishop_w = b->bishop_w & spaces;
+
+    return new_board;
+}
+
+board* get_intersecting_b(board *b, uint64_t spaces) {
+    board* new_board = board_alloc();
+    new_board->pawn_b = b->pawn_b & spaces;
+    new_board->queen_b = b->queen_b & spaces;
+    new_board->king_b = b->king_b & spaces;
+    new_board->rook_b = b->rook_b & spaces;
+    new_board->knight_b = b->knight_b & spaces;
+    new_board->bishop_b = b->bishop_b & spaces;
+
+    return new_board;
+}
+
+uint64_t w_legal_moves(board* b) {
+    // First generate moves of pinned pieces, ie pieces limited by placing king in check
+    uint64_t rook_attacks_to_king = rook_move_board(b->king_w, b->white, b->black, b->castle_w_l, b->castle_w_r);
+    board* pinned_pieces = get_intersecting_w(b, rook_attacks_to_king);
+    
+
+}
+
 void play_game() {
     board* b = board_alloc();
+    fill_standard(b);
+    
+
 }
 
 char* get_move() {
