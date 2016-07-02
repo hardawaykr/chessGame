@@ -83,6 +83,7 @@ int fill_standard(board* b) {
     return 0;
 }
 
+
 uint64_t king_move_board(uint64_t king_board, uint64_t own_side, uint64_t other_side, int can_castle_left, int can_castle_right) {
     uint64_t pos_1 = king_board << 8;
     uint64_t pos_2 = (king_board & file_h) << 9;
@@ -246,6 +247,40 @@ uint64_t bishop_move_board(uint64_t bishop, uint64_t own_side, uint64_t other_si
 
 uint64_t queen_move_board(uint64_t queen, uint64_t own_side, uint64_t other_side) {
     return bishop_move_board(queen, own_side, other_side) | rook_move_board(queen, own_side, other_side, 0, 0);
+}
+
+uint64_t b_move_board(board *b) {
+    uint64_t pawn_moves = pawn_b_move_board(b->pawn_b, b->white, b->black);
+    uint64_t queen_moves = queen_move_board(b->queen_b, b->black, b->white);
+    uint64_t king_moves = king_move_board(b->king_b, b->black, b->white, b->castle_w_l, b->castle_w_r);
+    uint64_t rook_moves = rook_move_board(b->rook_b, b->black, b->white, b->castle_w_l, b->castle_w_r);
+    uint64_t knight_moves = knight_move_board(b->knight_b, b->black);
+    uint64_t bishop_moves = bishop_move_board(b->bishop_b, b->black, b->white);
+
+    return pawn_moves | queen_moves | king_moves | rook_moves | knight_moves | bishop_moves;
+}
+
+uint64_t w_move_board(board *b) {
+    uint64_t pawn_moves = pawn_w_move_board(b->pawn_w, b->white, b->black);
+    uint64_t queen_moves = queen_move_board(b->queen_w, b->white, b->black);
+    uint64_t king_moves = king_move_board(b->king_w, b->white, b->black, b->castle_w_l, b->castle_w_r);
+    uint64_t rook_moves = rook_move_board(b->rook_w, b->white, b->black, b->castle_w_l, b->castle_w_r);
+    uint64_t knight_moves = knight_move_board(b->knight_w, b->white);
+    uint64_t bishop_moves = bishop_move_board(b->bishop_w, b->white, b->black);
+
+    return pawn_moves | queen_moves | king_moves | rook_moves | knight_moves | bishop_moves;
+}
+
+uint64_t attack_board_b(board* b) {
+    return b_move_board(b) & b->white;
+}
+
+uint64_t attack_board_w(board* b) {
+    return w_move_board(b) & b->black;
+}
+
+int is_attacked_w(uint64_t piece_w, board* b) {
+    return 0; 
 }
 
 void play_game() {
