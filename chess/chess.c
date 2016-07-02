@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include "dbg.h"
 
+// Board representation with rank / file 0d out to ease computation of overflows
 uint64_t rank_8 = 0x00FFFFFFFFFFFFFF;
 uint64_t rank_7 = 0xFF00FFFFFFFFFFFF;
 uint64_t rank_1 = 0xFFFFFFFFFFFFFF00;
@@ -42,6 +43,14 @@ typedef struct board {
     int check_b;
 } board;
 
+board* board_alloc() {
+    board *b = malloc(sizeof(board));
+    if (!b) {
+        printf("Board failed to allocate\n");
+        return NULL;
+    }
+    return b;
+}
 
 int fill_standard(board* b) {
     b->pawn_w = 0x000000000000FF00;
@@ -214,9 +223,12 @@ uint64_t queen_move_board(uint64_t queen, uint64_t own_side, uint64_t other_side
     return bishop_move_board(queen, own_side, other_side) | rook_move_board(queen, own_side, other_side);
 }
 
+void play_game() {
+    board* b = board_alloc();
+}
 
 board* parse_fen(char *fen) {
-    board *b = malloc(sizeof(board));
+    board *b = board_alloc();
     char* fields[6]; 
     char* token = strtok(fen, " ");
     fields[0] = token;
@@ -230,4 +242,8 @@ board* parse_fen(char *fen) {
         fields[i] = token;
     }
     return 0;
+}
+
+board* parse_piece_fen(char *row) {
+    return NULL; 
 }

@@ -1,7 +1,7 @@
 #include "../chess.c"
 
 int main(void) {
-    board* b = malloc(sizeof(board));
+    board* b = board_alloc();
     fill_standard(b);
     if (b->king_w != 0x0000000000000010) {
         printf("Error king position %" PRIu64 "\n", b->king_w);
