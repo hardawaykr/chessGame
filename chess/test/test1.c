@@ -116,7 +116,7 @@ int main(void) {
         printf("Success on king castle test 2\n");
     }
     
-    char *fen = "1 2 3 4 5 6";
+    char fen[] = "1 2 3 4 5 6";
     board* b_2 = parse_fen(fen);
     free(b);
     free(b_2);
