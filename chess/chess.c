@@ -52,6 +52,10 @@ board* board_alloc() {
     return b;
 }
 
+void board_delete(board *b) {
+    free(b);
+}
+
 int fill_standard(board* b) {
     b->pawn_w = 0x000000000000FF00;
     b->pawn_b = 0x00FF000000000000;
@@ -93,7 +97,14 @@ uint64_t king_move_board(uint64_t king_board, uint64_t own_side, uint64_t other_
     uint64_t pos_10 = 0;
     if (can_castle_right) {
         pos_9 = ((king_board & file_a) >> 1) & ~other_side & ~own_side;
-        pos_9 = ((pos_9 & file_a) >> 1) & ~other_side;
+        pos_9 = ((pos_9 & file_a) >> 1) & ~other_side & ~own_side;
+
+        // Check that next space is free for rook to slide through
+        uint64_t space = ((pos_9 & file_a) >> 1) & (other_side | own_side);
+        if (space) {
+            pos_9 = 0;
+        }
+
     }
     if (can_castle_left) {
         pos_10 = ((king_board & file_h) << 1) & ~other_side & ~ own_side;
@@ -143,7 +154,7 @@ uint64_t pawn_b_move_board(uint64_t pawn, uint64_t white, uint64_t black) {
     return (pos_1 | pos_2 | pos_3 | pos_4) & ~black;
 }
 
-uint64_t rook_move_board(uint64_t rook, uint64_t own_side, uint64_t other_side) {
+uint64_t rook_move_board(uint64_t rook, uint64_t own_side, uint64_t other_side, int can_castle_left, int can_castle_right) {
     // North ray 
     uint64_t north_ray = (rook << 8) & ~own_side;
     north_ray |= ((north_ray & ~other_side) << 8) & ~own_side;
@@ -180,6 +191,20 @@ uint64_t rook_move_board(uint64_t rook, uint64_t own_side, uint64_t other_side) 
     west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
     west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
 
+    // castling 
+    uint64_t pos_9 = 0;
+    uint64_t pos_10 = 0;
+    if (can_castle_right) {
+        pos_9 = ((rook & file_a) >> 1) & ~other_side & ~own_side;
+        pos_9 = ((pos_9 & file_a) >> 1) & ~other_side;
+        pos_9 = ((pos_9 & file_a) >> 1) & ~other_side;
+    }
+    if (can_castle_left) {
+        pos_10 = ((rook & file_h) << 1) & ~other_side & ~ own_side;
+        pos_10 = ((pos_10 & file_h) << 1) & ~other_side;
+        pos_10 = ((pos_10 & file_h) << 1) & ~other_side;
+
+    } 
     return north_ray | south_ray | east_ray | west_ray;
 }
 
@@ -220,11 +245,15 @@ uint64_t bishop_move_board(uint64_t bishop, uint64_t own_side, uint64_t other_si
 }
 
 uint64_t queen_move_board(uint64_t queen, uint64_t own_side, uint64_t other_side) {
-    return bishop_move_board(queen, own_side, other_side) | rook_move_board(queen, own_side, other_side);
+    return bishop_move_board(queen, own_side, other_side) | rook_move_board(queen, own_side, other_side, 0, 0);
 }
 
 void play_game() {
     board* b = board_alloc();
+}
+
+char* get_move() {
+    return "";
 }
 
 board* parse_fen(char *fen) {

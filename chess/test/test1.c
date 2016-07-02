@@ -36,7 +36,7 @@ int main(void) {
     } else {
         printf("Pawn success \n");
     }
-    uint64_t white_rook_moves = rook_move_board(b->rook_w, b->white, b->black);
+    uint64_t white_rook_moves = rook_move_board(b->rook_w, b->white, b->black, b->castle_w_l, b->castle_w_r);
     if (white_rook_moves != 0) {
         printf("Rook error %" PRIu64 "\n", white_pawn_moves);
     } else {
@@ -45,13 +45,13 @@ int main(void) {
     uint64_t test_rook = 0x0000000008000000;
     uint64_t test_white = 0x0000000048000000;
     uint64_t test_black = 0x0008000000000000;
-    uint64_t rook_moves = rook_move_board(test_rook, 0, 0);
+    uint64_t rook_moves = rook_move_board(test_rook, 0, 0, 0, 0);
     if (rook_moves != 0x08080808F7080808) {
        printf("Test Rook error %" PRIu64 "\n", rook_moves);
     } else {
         printf("Valid rook board. \n");
     }
-    rook_moves = rook_move_board(test_rook, test_white, test_black);
+    rook_moves = rook_move_board(test_rook, test_white, test_black, 0, 0);
 
     if (rook_moves != 0x0008080837080808) {
        printf("Test Rook error %" PRIu64 "\n", rook_moves);
@@ -114,6 +114,14 @@ int main(void) {
        printf("Incorrect king castle test 2 %" PRIu64 "\n", king_moves);
     } else {
         printf("Success on king castle test 2\n");
+    }
+
+    // Castle test with piece at space adjacent to king after castle
+    king_moves = king_move_board(0x0000000000000010, 0x0000000000000011, 2, 0, 1);
+    if (king_moves != 0x0000000000003828) {
+       printf("Incorrect king castle test 3 %" PRIu64 "\n", king_moves);
+    } else {
+        printf("Success on king castle test 3\n");
     }
     
     char fen[] = "1 2 3 4 5 6";
