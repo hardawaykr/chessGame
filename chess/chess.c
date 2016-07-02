@@ -4,7 +4,7 @@
 #include <inttypes.h>
 #include "dbg.h"
 
-// Board representation with rank / file 0d out to ease computation of overflows
+// Board representations with rank / file 0d out to ease computation of overflows
 uint64_t rank_8 = 0x00FFFFFFFFFFFFFF;
 uint64_t rank_7 = 0xFF00FFFFFFFFFFFF;
 uint64_t rank_1 = 0xFFFFFFFFFFFFFF00;
@@ -13,6 +13,14 @@ uint64_t file_a = 0xFEFEFEFEFEFEFEFE;
 uint64_t file_b = 0xFDFDFDFDFDFDFDFD;
 uint64_t file_h = 0x7F7F7F7F7F7F7F7F;
 uint64_t file_g = 0xBFBFBFBFBFBFBFBF;
+
+/*
+ * Struct containing current board state. 
+ * Uses bitbaord representation to store location of each piece. 
+ * Each "board" is a 64 bit int with each bit denoting if that type of 
+ * exists in that location. Bit 0 corresponds to the bottom left corner
+ * and bit 63 corresponds to the top right corner. 
+ */
 
 typedef struct board {
     uint64_t pawn_w;
@@ -56,6 +64,10 @@ void board_delete(board *b) {
     free(b);
 }
 
+/* 
+ * Sets each piece in board to starting represenation. 
+ * Also initializes boolean values for check and castling.
+*/
 int fill_standard(board* b) {
     b->pawn_w = 0x000000000000FF00;
     b->pawn_b = 0x00FF000000000000;
@@ -83,7 +95,10 @@ int fill_standard(board* b) {
     return 0;
 }
 
-
+/* 
+ * Generates all legal moves for the king and returns them in one combined board. 
+ * Requires both castling booleans for the current side to generate castling move for king. 
+*/
 uint64_t king_move_board(uint64_t king_board, uint64_t own_side, uint64_t other_side, int can_castle_left, int can_castle_right) {
     uint64_t pos_1 = king_board << 8;
     uint64_t pos_2 = (king_board & file_h) << 9;
@@ -192,20 +207,6 @@ uint64_t rook_move_board(uint64_t rook, uint64_t own_side, uint64_t other_side, 
     west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
     west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
 
-    // castling 
-    uint64_t pos_9 = 0;
-    uint64_t pos_10 = 0;
-    if (can_castle_right) {
-        pos_9 = ((rook & file_a) >> 1) & ~other_side & ~own_side;
-        pos_9 = ((pos_9 & file_a) >> 1) & ~other_side;
-        pos_9 = ((pos_9 & file_a) >> 1) & ~other_side;
-    }
-    if (can_castle_left) {
-        pos_10 = ((rook & file_h) << 1) & ~other_side & ~ own_side;
-        pos_10 = ((pos_10 & file_h) << 1) & ~other_side;
-        pos_10 = ((pos_10 & file_h) << 1) & ~other_side;
-
-    } 
     return north_ray | south_ray | east_ray | west_ray;
 }
 
@@ -271,16 +272,32 @@ uint64_t w_move_board(board *b) {
     return pawn_moves | queen_moves | king_moves | rook_moves | knight_moves | bishop_moves;
 }
 
+/* 
+ * Returns all possible attacks by black pieces.
+*/
 uint64_t attack_board_b(board* b) {
     return b_move_board(b) & b->white;
 }
 
+/* 
+ * Returns all possible attacks by white pieces.
+*/
 uint64_t attack_board_w(board* b) {
     return w_move_board(b) & b->black;
 }
 
+/*
+ * Returns true if current piece is being attacked. 
+*/
 int is_attacked_w(uint64_t piece_w, board* b) {
-    return 0; 
+    return (attack_board_b(b) & piece_w) ? 1: 0; 
+}
+
+/*
+ * Returns true if current piece is being attacked. 
+*/
+int is_attacked_b(uint64_t piece_b, board* b) {
+    return (attack_board_w(b) & piece_b) ? 1: 0; 
 }
 
 void play_game() {
@@ -291,6 +308,10 @@ char* get_move() {
     return "";
 }
 
+/* 
+ * Converts an input fen representation into internal bitboard representation. 
+ * Used to parse various game boards for move evaluation. 
+*/
 board* parse_fen(char *fen) {
     board *b = board_alloc();
     char* fields[6]; 

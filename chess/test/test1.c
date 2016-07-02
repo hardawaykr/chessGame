@@ -123,6 +123,7 @@ int main(void) {
     } else {
         printf("Success on king castle test 3\n");
     }
+
     
     char fen[] = "1 2 3 4 5 6";
     board* b_2 = parse_fen(fen);
