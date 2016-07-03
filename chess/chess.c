@@ -337,56 +337,132 @@ board* board_copy(board *new_board, board* b) {
     return new_board;
 }
 
-void get_intersecting_w(board* new_board, board *b, uint64_t spaces) {
-    board_copy(new_board, b);
-    new_board->pawn_w &= spaces;
-    new_board->queen_w &= spaces;
-    new_board->king_w &= spaces;
-    new_board->rook_w &= spaces;
-    new_board->knight_w &= spaces;
-    new_board->bishop_w &= spaces;
+void get_intersecting_w(board *b, uint64_t spaces) {
+    b->pawn_w &= spaces;
+    b->queen_w &= spaces;
+    b->king_w &= spaces;
+    b->rook_w &= spaces;
+    b->knight_w &= spaces;
+    b->bishop_w &= spaces;
+    b->white &= spaces;
 }
 
-void get_intersecting_b(board* new_board, board *b, uint64_t spaces) {
-    board_copy(new_board, b);
-    new_board->pawn_b &= spaces;
-    new_board->queen_b &= spaces;
-    new_board->king_b &= spaces;
-    new_board->rook_b &= spaces;
-    new_board->knight_b &= spaces;
-    new_board->bishop_b &= spaces;
+void get_intersecting_b(board *b, uint64_t spaces) {
+    b->pawn_b &= spaces;
+    b->queen_b &= spaces;
+    b->king_b &= spaces;
+    b->rook_b &= spaces;
+    b->knight_b &= spaces;
+    b->bishop_b &= spaces;
+    b->black &= spaces;
 }
 
 uint64_t w_legal_moves(board* b) {
     // First generate moves of pinned pieces, ie pieces limited by placing king in check
-    uint64_t attacks_to_king = queen_move_board(b->king_w, b->white, b->black)  & b->black;
+    uint64_t attacks_to_king = queen_move_board(b->king_w, b->black, b->white)  & b->black;
     // Board with potentially pinned pieces ie pieces in possible rook attack path to king.
     board *b_pinned = board_alloc();
-    get_intersecting_w(b_pinned, b, attacks_to_king);
+    board_copy(b_pinned, b);
+    get_intersecting_w(b_pinned, attacks_to_king);
     // Compute new board without pinned pieces by finding intersection of board and the flip of all pinned pieces. 
     board* b_unpinned = board_alloc();
-    get_intersecting_w(b_unpinned, b, ~(b_pinned->white));
+    board_copy(b_unpinned, b);
+    get_intersecting_w(b_unpinned, ~(b_pinned->white));
     // Re-compute rook attacks with new board.
-    attacks_to_king = queen_move_board(b_unpinned->king_w, b_unpinned->white,b_unpinned->black) & b_unpinned->black;
+    attacks_to_king = queen_move_board(b_unpinned->king_w, b_unpinned->black,b_unpinned->white) & b_unpinned->black;
     
     // Find all enemy, black, pinning pieces by finding black intersection with queen attacks from king
     board* b_pinners = board_alloc();
-    get_intersecting_b(b_pinners, b, attacks_to_king);
+    board_copy(b_pinners, b);
+    get_intersecting_b(b_pinners, attacks_to_king);
     uint64_t pinners = b_pinners->rook_b | b_pinners->queen_b;
     uint64_t pinner_attacks = queen_move_board(pinners, b_pinners->black, b_pinners->white);
     // Intersect pinner_attacks with pinned pieces to find actually pinned pieces.
-    get_intersecting_w(b_pinned, b_pinned, pinner_attacks);
+    get_intersecting_w(b_pinned, pinner_attacks);
     uint64_t pinned_piece_moves = w_move_board(b_pinned);
     // Intersect with pinner_attacks and pinners to find moves which capture pinner or move along attacking path.
     pinned_piece_moves &= (pinner_attacks | pinners); 
 
     // Remove pinned pieces from rest of move generation.
-    get_intersecting_w(b, b, ~(b_pinned->white));
+    get_intersecting_w(b, ~(b_pinned->white));
     board_delete(b_pinned);
     board_delete(b_unpinned);
     board_delete(b_pinners);
 
     return pinned_piece_moves | w_move_board(b);
+}
+
+uint64_t b_legal_moves(board* b) {
+    // First generate moves of pinned pieces, ie pieces limited by placing king in check
+    uint64_t attacks_to_king = queen_move_board(b->king_b, b->white, b->black)  & b->white;
+    // Board with potentially pinned pieces ie pieces in possible rook attack path to king.
+    board *b_pinned = board_alloc();
+    board_copy(b_pinned);
+    get_intersecting_b(b_pinned, attacks_to_king);
+    // Compute new board without pinned pieces by finding intersection of board and the flip of all pinned pieces. 
+    board* b_unpinned = board_alloc();
+    board_copy(b_unpinned);
+    get_intersecting_b(b_unpinned, ~(b_pinned->black));
+    // Re-compute rook attacks with new board.
+    attacks_to_king = queen_move_board(b_unpinned->king_b, b_unpinned->white,b_unpinned->black) & b_unpinned->white;
+    
+    // Find all enemy, black, pinning pieces by finding black intersection with queen attacks from king
+    board* b_pinners = board_alloc();
+    board_copy(b_pinners);
+    get_intersecting_w(b_pinners, attacks_to_king);
+    uint64_t pinners = b_pinners->rook_w | b_pinners->queen_w;
+    uint64_t pinner_attacks = queen_move_board(pinners, b_pinners->white, b_pinners->black);
+    // Intersect pinner_attacks with pinned pieces to find actually pinned pieces.
+    get_intersecting_b(b_pinned, pinner_attacks);
+    uint64_t pinned_piece_moves = b_move_board(b_pinned);
+    // Intersect with pinner_attacks and pinners to find moves which capture pinner or move along attacking path.
+    pinned_piece_moves &= (pinner_attacks | pinners); 
+
+    // Remove pinned pieces from rest of move generation.
+    get_intersecting_b(b, ~(b_pinned->white));
+    board_delete(b_pinned);
+    board_delete(b_unpinned);
+    board_delete(b_pinners);
+
+    return pinned_piece_moves | b_move_board(b);
+}
+
+/* 
+ * Updates move location in given board. 
+ * from: single bit location being moved, to is destination bit location.
+ * board: board to be updated 
+*/
+void make_move_w(uint64_t from, uint64_t to, board* b) {
+    uint64_t pawn = b->pawn_w & from;
+    uint64_t queen = b->queen_w & from;
+    uint64_t king = b->king_w & from;
+    uint64_t rook = b->rook_w & from;
+    uint64_t knight = b->knight_w & from;
+    uint64_t bishop = b->bishop_w & from;
+    
+    if (pawn) {
+        b->pawn_w &= ~from;
+        b->pawn_w |= to;
+    } else if (queen) {
+        b->queen_w &= ~from;
+        b->queen_w |= to;
+    } else if (king) {
+        b->king_w &= ~from;
+        b->king_w |= to;
+    } else if (rook) {
+        b->rook_w &= ~from;
+        b->rook_w |= to;
+    } else if (knight) {
+        b->knight_w &= ~from;
+        b->knight_w |= to;
+    } else if (bishop) {
+        b->bishop_w &= ~from;
+        b->bishop_w |= to;
+    }
+
+    b->white &= ~from;
+    b->white |= to;
+
 }
 
 void play_game() {
