@@ -3,6 +3,14 @@
 int main(void) {
     board* b = board_alloc();
     fill_standard(b);
+    // Basic test for white legal move generation. 
+    uint64_t white_legal_moves = w_legal_moves(b);
+    if (white_legal_moves != 0x00000000FFFF0000) {
+        printf("Error invalid legal white move gen %" PRIu64 "\n", white_legal_moves);
+    } else {
+        printf("Success. White legal moves correct.\n");
+    }
+    
     if (b->king_w != 0x0000000000000010) {
         printf("Error king position %" PRIu64 "\n", b->king_w);
     }
@@ -123,6 +131,7 @@ int main(void) {
     } else {
         printf("Success on king castle test 3\n");
     }
+
 
     
     char fen[] = "1 2 3 4 5 6";
