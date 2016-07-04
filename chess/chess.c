@@ -47,8 +47,9 @@ typedef struct board {
     int castle_b_l;
     int castle_b_r;
 
-    int check_w;
-    int check_b;
+    // 1 if whites turn, 0 if blacks
+    int turn; 
+
 } board;
 
 board* board_alloc() {
@@ -62,6 +63,14 @@ board* board_alloc() {
 
 void board_delete(board *b) {
     free(b);
+}
+
+uint64_t get_curr_side(board *b) {
+    return (b->turn) ? b->white: b->black;
+}
+
+uint64_t get_opp_side(board *b) {
+    return (!b->turn) ? b->white: b->black;
 }
 
 /* 
@@ -97,8 +106,8 @@ int fill_standard(board* b) {
     b->castle_b_l = 0;
     b->castle_b_r = 0;
 
-    b->check_w = 0;
-    b->check_b = 0;
+    b->turn = 1;
+
     return 0;
 }
 
@@ -369,7 +378,7 @@ uint64_t w_legal_moves(board* b) {
     board_copy(b_unpinned, b);
     get_intersecting_w(b_unpinned, ~(b_pinned->white));
     // Re-compute rook attacks with new board.
-    attacks_to_king = queen_move_board(b_unpinned->king_w, b_unpinned->black,b_unpinned->white) & b_unpinned->black;
+    attacks_to_king = queen_move_board(b_unpinned->king_w, b_unpinned->black, b_unpinned->white) & b_unpinned->black;
     
     // Find all enemy, black, pinning pieces by finding black intersection with queen attacks from king
     board* b_pinners = board_alloc();
@@ -397,18 +406,18 @@ uint64_t b_legal_moves(board* b) {
     uint64_t attacks_to_king = queen_move_board(b->king_b, b->white, b->black)  & b->white;
     // Board with potentially pinned pieces ie pieces in possible rook attack path to king.
     board *b_pinned = board_alloc();
-    board_copy(b_pinned);
+    board_copy(b_pinned, b);
     get_intersecting_b(b_pinned, attacks_to_king);
     // Compute new board without pinned pieces by finding intersection of board and the flip of all pinned pieces. 
     board* b_unpinned = board_alloc();
-    board_copy(b_unpinned);
+    board_copy(b_unpinned, b);
     get_intersecting_b(b_unpinned, ~(b_pinned->black));
     // Re-compute rook attacks with new board.
-    attacks_to_king = queen_move_board(b_unpinned->king_b, b_unpinned->white,b_unpinned->black) & b_unpinned->white;
+    attacks_to_king = queen_move_board(b_unpinned->king_b, b_unpinned->white, b_unpinned->black) & b_unpinned->white;
     
     // Find all enemy, black, pinning pieces by finding black intersection with queen attacks from king
     board* b_pinners = board_alloc();
-    board_copy(b_pinners);
+    board_copy(b_pinners, b);
     get_intersecting_w(b_pinners, attacks_to_king);
     uint64_t pinners = b_pinners->rook_w | b_pinners->queen_w;
     uint64_t pinner_attacks = queen_move_board(pinners, b_pinners->white, b_pinners->black);
@@ -419,12 +428,107 @@ uint64_t b_legal_moves(board* b) {
     pinned_piece_moves &= (pinner_attacks | pinners); 
 
     // Remove pinned pieces from rest of move generation.
-    get_intersecting_b(b, ~(b_pinned->white));
+    get_intersecting_b(b, ~(b_pinned->black));
     board_delete(b_pinned);
     board_delete(b_unpinned);
     board_delete(b_pinners);
 
     return pinned_piece_moves | b_move_board(b);
+}
+
+uint64_t get_legal_moves(board *b) {
+    return (b->turn) ? w_legal_moves(b): b_legal_moves(b);
+}
+
+uint64_t move_board_w(board* b, uint64_t piece) {
+    uint64_t pawn = b->pawn_w & piece;
+    uint64_t queen = b->queen_w & piece;
+    uint64_t king = b->king_w & piece;
+    uint64_t rook = b->rook_w & piece;
+    uint64_t knight = b->knight_w & piece;
+    uint64_t bishop = b->bishop_w & piece;
+    
+    if (pawn) {
+        return pawn_w_move_board(piece, b->black, b->white);
+    } else if (queen) {
+        return queen_move_board(piece, b->white, b->black);
+    } else if (king) {
+        return king_move_board(piece, b->white, b->black, b->castle_w_l, b->castle_w_r);
+    } else if (rook) {
+        return rook_move_board(piece, b->white, b->black);
+    } else if (knight) {
+        return knight_move_board(piece, b->white);
+    } else if (bishop) {
+        return bishop_move_board(piece, b->white, b->black);
+    }
+    return 0;
+}
+
+uint64_t move_board_b(board* b, uint64_t piece) {
+    uint64_t pawn = b->pawn_b & piece;
+    uint64_t queen = b->queen_b & piece;
+    uint64_t king = b->king_b & piece;
+    uint64_t rook = b->rook_b & piece;
+    uint64_t knight = b->knight_b & piece;
+    uint64_t bishop = b->bishop_b & piece;
+    
+    if (pawn) {
+        return pawn_b_move_board(piece, b->white, b->black);
+    } else if (queen) {
+        return queen_move_board(piece, b->black, b->white);
+    } else if (king) {
+        return king_move_board(piece, b->black, b->white, b->castle_b_l, b->castle_b_r);
+    } else if (rook) {
+        return rook_move_board(piece, b->black, b->white);
+    } else if (knight) {
+        return knight_move_board(piece, b->black);
+    } else if (bishop) {
+        return bishop_move_board(piece, b->black, b->white);
+    }
+    return 0;
+}
+
+uint64_t move_board(board* b, uint64_t piece) {
+    return (b->turn) ? move_board_w(b, piece): move_board_b(b, piece);
+}
+
+/* 
+ * Updates move location in given board. 
+ * from: single bit location being moved, to is destination bit location.
+ * board: board to be updated 
+*/
+void make_move_b(uint64_t from, uint64_t to, board* b) {
+    uint64_t pawn = b->pawn_b & from;
+    uint64_t queen = b->queen_b & from;
+    uint64_t king = b->king_b & from;
+    uint64_t rook = b->rook_b & from;
+    uint64_t knight = b->knight_b & from;
+    uint64_t bishop = b->bishop_b & from;
+    
+    if (pawn) {
+        b->pawn_b &= ~from;
+        b->pawn_b |= to;
+    } else if (queen) {
+        b->queen_b &= ~from;
+        b->queen_b |= to;
+    } else if (king) {
+        b->king_b &= ~from;
+        b->king_b |= to;
+    } else if (rook) {
+        b->rook_b &= ~from;
+        b->rook_b |= to;
+    } else if (knight) {
+        b->knight_b &= ~from;
+        b->knight_b |= to;
+    } else if (bishop) {
+        b->bishop_b &= ~from;
+        b->bishop_b |= to;
+    }
+
+    b->black &= ~from;
+    b->black |= to;
+    b->turn = 1;
+
 }
 
 /* 
@@ -462,7 +566,83 @@ void make_move_w(uint64_t from, uint64_t to, board* b) {
 
     b->white &= ~from;
     b->white |= to;
+    b->turn = 0;
 
+}
+
+/*
+ * Undo move by calling moving in the reverse direction. 
+*/
+void undo_move_b(uint64_t from, uint64_t to, board* b) {
+    make_move_b(to, from, b);
+    b->turn = 0;
+}
+
+/*
+ * Undo move by calling moving in the reverse direction. 
+*/
+void undo_move_w(uint64_t from, uint64_t to, board* b) {
+    make_move_w(to, from, b);
+    b->turn = 1;
+}
+
+void undo_move(uint64_t from, uint64_t to, board* b) {
+    (!b->turn) ? undo_move_w(from, to, b): undo_move_b(from, to, b);
+}
+
+void make_move(uint64_t from, uint64_t to, board* b) {
+    (b->turn) ? make_move_w(from, to, b): make_move_b(from, to, b);
+}
+
+uint64_t perft(board* b, int depth) {
+    if (!depth) return 1;
+    uint64_t nodes = 0;
+    uint64_t moves = get_legal_moves(b);
+    uint64_t move_pieces = (queen_move_board(moves, get_opp_side(b), get_curr_side(b)) \
+                                | knight_move_board(moves, get_opp_side(b))) & get_curr_side(b);
+
+   
+    uint64_t from_mask = 1;
+    for (int i = 0; i < 63; i++) {
+        uint64_t from = move_pieces & from_mask;
+        if (from) { 
+            uint64_t piece_moves = move_board(b, from) & moves;
+            uint64_t to_mask = 1;
+            for (int j = 0; j < 63; j++) {
+                uint64_t to = piece_moves & to_mask;
+                if (to) {
+                    make_move(from, to, b);
+                    nodes += perft(b, depth - 1);
+                    undo_move(from, to, b);
+                }
+                to_mask = to_mask << 1;
+            }
+        }
+        from_mask = from_mask << 1;
+    }
+
+
+
+    //uint64_t to_mask = 1;
+    //for (int i = 1; i < 63; i++) {
+    //    uint64_t to = moves & to_mask;
+    //    to_mask = to_mask << 1;
+    //    if (to) {
+    //        uint64_t move_pieces = queen_move_board(to, get_opp_side(b), get_curr_side(b)) \
+    //                                 & get_curr_side(b);
+    //        uint64_t from_mask = 1;
+    //        for (int j = 1; j < 63; j++) {
+    //            uint64_t from  = move_pieces & from_mask;
+    //            from_mask = from_mask << 1;
+    //            if (from) { 
+    //                make_move(from, to, b);
+    //                nodes += perft(b, depth - 1);
+    //                undo_move(from, to, b);
+    //            }
+    //        }
+    //    }
+    //}
+    return nodes;
 }
 
 void play_game() {

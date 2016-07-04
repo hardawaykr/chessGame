@@ -3,6 +3,15 @@
 int main(void) {
     board* b = board_alloc();
     fill_standard(b);
+    board* perft_board = board_alloc();
+    fill_standard(perft_board); 
+    uint64_t perft_test_1 = perft(perft_board, 5); 
+    if (perft_test_1 != 20) {
+        printf("Error invalid perft test 1 %" PRIu64 "\n", perft_test_1);
+        printf("The board after perft test 1 is %" PRIu64 "\n", perft_board->white | perft_board->black);
+    } else {
+        printf("Success. First perft test success.\n");
+    }
     // Basic test for white legal move generation. 
     uint64_t white_legal_moves = w_legal_moves(b);
     if (white_legal_moves != 0x00000000FFFF0000) {
@@ -131,7 +140,6 @@ int main(void) {
     } else {
         printf("Success on king castle test 3\n");
     }
-
 
     
     char fen[] = "1 2 3 4 5 6";
