@@ -65,10 +65,16 @@ void board_delete(board *b) {
     free(b);
 }
 
+/* 
+ * Returns all pieces for currently active side. 
+*/
 uint64_t get_curr_side(board *b) {
     return (b->turn) ? b->white: b->black;
 }
 
+/* 
+ * Returns all pieces for opposing side.
+*/
 uint64_t get_opp_side(board *b) {
     return (!b->turn) ? b->white: b->black;
 }
@@ -76,7 +82,7 @@ uint64_t get_opp_side(board *b) {
 /* 
  * Fills each side, white and black, in bitboard with respective sides pieces. 
 */
-void fill_sides(board *b) {
+void set_sides(board *b) {
     b->white = b->pawn_w | b->queen_w | b->king_w | b->bishop_w | b->knight_w | b->rook_w;
     b->black = b->pawn_b | b->queen_b | b->king_b | b->bishop_b | b->knight_b | b->rook_b;
 }
@@ -85,11 +91,11 @@ void fill_sides(board *b) {
  * Sets each piece in board to starting represenation. 
  * Also initializes boolean values for check and castling.
 */
-int fill_standard(board* b) {
+int set_standard(board* b) {
     b->pawn_w = 0x000000000000FF00;
     b->pawn_b = 0x00FF000000000000;
     b->queen_w = 0x0000000000000008;
-    b->queen_b = 0x8000000000000000;
+    b->queen_b = 0x0800000000000000;
     b->king_w = 0x0000000000000010;
     b->king_b = 0x1000000000000000;
     b->rook_w = 0x0000000000000081;
@@ -99,7 +105,7 @@ int fill_standard(board* b) {
     b->bishop_w = 0x0000000000000024;
     b->bishop_b = 0x2400000000000000;
 
-    fill_sides(b);
+    set_sides(b);
 
     b->castle_w_l = 0;
     b->castle_w_r = 0;
@@ -111,6 +117,61 @@ int fill_standard(board* b) {
     return 0;
 }
 
+/* 
+ * Initializes empty board.  
+*/
+int set_empty(board* b) {
+    b->pawn_w = 0;
+    b->pawn_b = 0;
+    b->queen_w = 0;
+    b->queen_b = 0;
+    b->king_w = 0;
+    b->king_b = 0;
+    b->rook_w = 0;
+    b->rook_b = 0;
+    b->knight_w = 0;
+    b->knight_b = 0;
+    b->bishop_w = 0;
+    b->bishop_b = 0;
+
+    b->white = 0;
+    b->black = 0;
+
+    b->castle_w_l = 0;
+    b->castle_w_r = 0;
+    b->castle_b_l = 0;
+    b->castle_b_r = 0;
+
+    b->turn = 1;
+
+    return 0;
+}
+int board_equals(board* b1, board* b2) {
+    int p_w = b1->pawn_w == b2->pawn_w;
+    int p_b = b1->pawn_b == b2->pawn_b;
+    int q_w = b1->queen_w == b2->queen_w;
+    int q_b = b1->queen_b ==  b2->queen_b;
+    int k_w = b1->king_w == b2->king_w;
+    int k_b = b1->king_b == b2->king_b;
+    int r_w = b1->rook_w == b2->rook_w;
+    int r_b = b1->rook_b == b2->rook_b;
+    int n_w = b1->knight_w == b2->knight_w;
+    int n_b = b1->knight_b == b2->knight_b;
+    int b_w = b1->bishop_w == b2->bishop_w;
+    int b_b = b1->bishop_b == b2->bishop_b;
+
+    int w = b1->white == b2->white;
+    int b = b1->black == b2->black;
+
+    int c_w_l = b1->castle_w_l == b2->castle_w_l;
+    int c_w_r = b1->castle_w_r == b2->castle_w_r;
+    int c_b_l = b1->castle_b_l == b2->castle_b_l;
+    int c_b_r = b1->castle_b_r == b2->castle_b_r;
+
+    int t = b1->turn == b2->turn;
+    return p_w & p_b & q_w & q_b & q_w & k_w & k_b & r_w & r_b & n_w & n_b & b_b & b_w \
+          & w & b & c_w_r & c_w_l & c_b_r & c_b_l & t;
+}
 /* 
  * Generates all legal moves for the king and returns them in one combined board. 
  * Requires both castling booleans for the current side to generate castling move for king. 
@@ -138,6 +199,7 @@ uint64_t king_move_board(uint64_t king_board, uint64_t own_side, uint64_t other_
         }
 
     }
+
     if (can_castle_left) {
         pos_10 = ((king_board & file_h) << 1) & ~other_side & ~ own_side;
         pos_10 = ((pos_10 & file_h) << 1) & ~other_side;
@@ -269,7 +331,7 @@ uint64_t queen_move_board(uint64_t queen, uint64_t own_side, uint64_t other_side
 uint64_t b_move_board(board *b) {
     uint64_t pawn_moves = pawn_b_move_board(b->pawn_b, b->white, b->black);
     uint64_t queen_moves = queen_move_board(b->queen_b, b->black, b->white);
-    uint64_t king_moves = king_move_board(b->king_b, b->black, b->white, b->castle_w_l, b->castle_w_r);
+    uint64_t king_moves = king_move_board(b->king_b, b->black, b->white, b->castle_b_l, b->castle_b_r);
     uint64_t rook_moves = rook_move_board(b->rook_b, b->black, b->white);
     uint64_t knight_moves = knight_move_board(b->knight_b, b->black);
     uint64_t bishop_moves = bishop_move_board(b->bishop_b, b->black, b->white);
@@ -337,12 +399,13 @@ board* board_copy(board *new_board, board* b) {
     new_board->rook_b = b->rook_b;
     new_board->knight_b = b->knight_b;
     new_board->bishop_b = b->bishop_b;
-    fill_sides(new_board);
+    set_sides(new_board);
     new_board->castle_w_l = b->castle_w_l;
     new_board->castle_w_r = b->castle_w_r;
     new_board->castle_b_l = b->castle_b_l;
     new_board->castle_b_r = b->castle_b_r;
 
+    new_board->turn = b->turn;
     return new_board;
 }
 
@@ -449,7 +512,7 @@ uint64_t move_board_w(board* b, uint64_t piece) {
     uint64_t bishop = b->bishop_w & piece;
     
     if (pawn) {
-        return pawn_w_move_board(piece, b->black, b->white);
+        return pawn_w_move_board(piece, b->white, b->black);
     } else if (queen) {
         return queen_move_board(piece, b->white, b->black);
     } else if (king) {
@@ -527,7 +590,6 @@ void make_move_b(uint64_t from, uint64_t to, board* b) {
 
     b->black &= ~from;
     b->black |= to;
-    b->turn = 1;
 
 }
 
@@ -566,7 +628,6 @@ void make_move_w(uint64_t from, uint64_t to, board* b) {
 
     b->white &= ~from;
     b->white |= to;
-    b->turn = 0;
 
 }
 
@@ -575,7 +636,6 @@ void make_move_w(uint64_t from, uint64_t to, board* b) {
 */
 void undo_move_b(uint64_t from, uint64_t to, board* b) {
     make_move_b(to, from, b);
-    b->turn = 0;
 }
 
 /*
@@ -583,15 +643,16 @@ void undo_move_b(uint64_t from, uint64_t to, board* b) {
 */
 void undo_move_w(uint64_t from, uint64_t to, board* b) {
     make_move_w(to, from, b);
-    b->turn = 1;
 }
 
 void undo_move(uint64_t from, uint64_t to, board* b) {
     (!b->turn) ? undo_move_w(from, to, b): undo_move_b(from, to, b);
+    b->turn = !b->turn;
 }
 
 void make_move(uint64_t from, uint64_t to, board* b) {
     (b->turn) ? make_move_w(from, to, b): make_move_b(from, to, b);
+    b->turn = !b->turn;
 }
 
 uint64_t perft(board* b, int depth) {
@@ -600,15 +661,14 @@ uint64_t perft(board* b, int depth) {
     uint64_t moves = get_legal_moves(b);
     uint64_t move_pieces = (queen_move_board(moves, get_opp_side(b), get_curr_side(b)) \
                                 | knight_move_board(moves, get_opp_side(b))) & get_curr_side(b);
-
    
     uint64_t from_mask = 1;
-    for (int i = 0; i < 63; i++) {
+    for (int i = 1; i < 63; i++) {
         uint64_t from = move_pieces & from_mask;
         if (from) { 
             uint64_t piece_moves = move_board(b, from) & moves;
             uint64_t to_mask = 1;
-            for (int j = 0; j < 63; j++) {
+            for (int j = 1; j < 63; j++) {
                 uint64_t to = piece_moves & to_mask;
                 if (to) {
                     make_move(from, to, b);
@@ -621,33 +681,12 @@ uint64_t perft(board* b, int depth) {
         from_mask = from_mask << 1;
     }
 
-
-
-    //uint64_t to_mask = 1;
-    //for (int i = 1; i < 63; i++) {
-    //    uint64_t to = moves & to_mask;
-    //    to_mask = to_mask << 1;
-    //    if (to) {
-    //        uint64_t move_pieces = queen_move_board(to, get_opp_side(b), get_curr_side(b)) \
-    //                                 & get_curr_side(b);
-    //        uint64_t from_mask = 1;
-    //        for (int j = 1; j < 63; j++) {
-    //            uint64_t from  = move_pieces & from_mask;
-    //            from_mask = from_mask << 1;
-    //            if (from) { 
-    //                make_move(from, to, b);
-    //                nodes += perft(b, depth - 1);
-    //                undo_move(from, to, b);
-    //            }
-    //        }
-    //    }
-    //}
     return nodes;
 }
 
 void play_game() {
     board* b = board_alloc();
-    fill_standard(b);
+    set_standard(b);
     
 
 }
@@ -662,21 +701,72 @@ char* get_move() {
 */
 board* parse_fen(char *fen) {
     board *b = board_alloc();
+    set_empty(b);
     char* fields[6]; 
-    char* token = strtok(fen, " ");
+    char* token = strtok(fen, "/");
     fields[0] = token;
+    printf("The token is %s\n", token);
     for (int i = 0; i < 5; i++) {
         token = strtok(NULL, " ");
         if (token == NULL) {
             printf("fen must contain six fields separated by spaces");
             return NULL;
         }
-        printf("The %d token is %s\n", i + 1, token);
         fields[i] = token;
     }
-    return 0;
+    
+    uint64_t loc_mask = 0x8000000000000000;
+    for (int i = 0; i < strlen(fields[0]); i++) {
+        char c = fields[0][i];
+        char* character; 
+        int n = strtoul(&c, &character, 10);
+        if (n == 0) {
+            switch(*character) {
+                case('p'):
+                    b->pawn_b |= loc_mask;
+                    break;
+                case('q'):
+                    b->queen_b |= loc_mask;
+                    break;
+                case('k'):
+                    b->king_b |= loc_mask;
+                    break;
+                case('r'):
+                    b->rook_b |= loc_mask;
+                    break;
+                case('n'):
+                    b->knight_b |= loc_mask;
+                    break;
+                case('b'):
+                    b->bishop_b |= loc_mask;
+                    break;
+                case('P'):
+                    b->pawn_w |= loc_mask;
+                    break;
+                case('Q'):
+                    b->queen_w |= loc_mask;
+                    break;
+                case('K'):
+                    b->king_w |= loc_mask;
+                    break;
+                case('R'):
+                    b->rook_w |= loc_mask;
+                    break;
+                case('N'):
+                    b->knight_w |= loc_mask;
+                    break;
+                case('B'):
+                    b->bishop_w |= loc_mask;
+                    break;
+                default:
+                    continue;
+            }
+            loc_mask = loc_mask >> 1;
+        } else {
+            loc_mask = loc_mask >> (n + 1);
+        }
+    }
+    set_sides(b);
+    return b;
 }
 
-board* parse_piece_fen(char *row) {
-    return NULL; 
-}

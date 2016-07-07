@@ -2,10 +2,10 @@
 
 int main(void) {
     board* b = board_alloc();
-    fill_standard(b);
+    set_standard(b);
     board* perft_board = board_alloc();
-    fill_standard(perft_board); 
-    uint64_t perft_test_1 = perft(perft_board, 5); 
+    set_standard(perft_board); 
+    uint64_t perft_test_1 = perft(perft_board, 1); 
     if (perft_test_1 != 20) {
         printf("Error invalid perft test 1 %" PRIu64 "\n", perft_test_1);
         printf("The board after perft test 1 is %" PRIu64 "\n", perft_board->white | perft_board->black);
@@ -142,8 +142,30 @@ int main(void) {
     }
 
     
-    char fen[] = "1 2 3 4 5 6";
+    char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     board* b_2 = parse_fen(fen);
+    //free(b);
+    //b = board_alloc();
+    set_standard(b);
+    printf("Board before init %" PRIu64 "\n", b->white | b->black);
+    if ((b->white | b-> black) != 0xFFFF00000000FFFF) {
+        printf("Board initialization error %" PRIu64 "\n", b->white | b->black);
+    } else {
+        printf("Correct board initilization\n");
+    }
+
+    b_2->turn = b->turn;
+    b_2->castle_w_l = b->castle_w_l;                               
+    b_2->castle_w_r = b->castle_w_r;                               
+    b_2->castle_b_l = b->castle_b_l;                               
+    b_2->castle_b_r = b->castle_b_r;                               
+
+    if (!board_equals(b, b_2)) {
+       printf("Incorrect fen position parsing new board %" PRIu64 " correct board %" PRIu64 "\n", b_2->white | b_2->black, b->white | b->black);
+    } else {
+        printf("Success on fen parsing\n");
+    }
+                                    
     free(b);
     free(b_2);
     return 0;
