@@ -703,10 +703,9 @@ board* parse_fen(char *fen) {
     board *b = board_alloc();
     set_empty(b);
     char* fields[6]; 
-    char* token = strtok(fen, "/");
+    char* token = strtok(fen, " ");
     fields[0] = token;
-    printf("The token is %s\n", token);
-    for (int i = 0; i < 5; i++) {
+    for (int i = 1; i < 6; i++) {
         token = strtok(NULL, " ");
         if (token == NULL) {
             printf("fen must contain six fields separated by spaces");
@@ -715,55 +714,60 @@ board* parse_fen(char *fen) {
         fields[i] = token;
     }
     
-    uint64_t loc_mask = 0x8000000000000000;
+    uint64_t loc_mask = 0x0100000000000000;
     for (int i = 0; i < strlen(fields[0]); i++) {
         char c = fields[0][i];
         char* character; 
         int n = strtoul(&c, &character, 10);
-        if (n == 0) {
+        if (!n) {
             switch(*character) {
-                case('p'):
+                case 'p':
                     b->pawn_b |= loc_mask;
                     break;
-                case('q'):
+                case 'q':
                     b->queen_b |= loc_mask;
                     break;
-                case('k'):
+                case 'k':
                     b->king_b |= loc_mask;
                     break;
-                case('r'):
+                case 'r':
                     b->rook_b |= loc_mask;
                     break;
-                case('n'):
+                case 'n':
                     b->knight_b |= loc_mask;
                     break;
-                case('b'):
+                case 'b':
                     b->bishop_b |= loc_mask;
                     break;
-                case('P'):
+                case 'P':
                     b->pawn_w |= loc_mask;
                     break;
-                case('Q'):
+                case 'Q':
                     b->queen_w |= loc_mask;
                     break;
-                case('K'):
+                case 'K':
                     b->king_w |= loc_mask;
                     break;
-                case('R'):
+                case 'R':
                     b->rook_w |= loc_mask;
                     break;
-                case('N'):
+                case 'N':
                     b->knight_w |= loc_mask;
                     break;
-                case('B'):
+                case 'B':
                     b->bishop_w |= loc_mask;
                     break;
+                case '/':
+                    loc_mask = loc_mask >> 15;
                 default:
                     continue;
             }
-            loc_mask = loc_mask >> 1;
+            loc_mask = loc_mask << 1;
+            if (!loc_mask) {
+                loc_mask = 0x8000000000000000;
+            }
         } else {
-            loc_mask = loc_mask >> (n + 1);
+            loc_mask = loc_mask << n;
         }
     }
     set_sides(b);

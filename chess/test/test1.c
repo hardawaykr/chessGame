@@ -144,8 +144,8 @@ int main(void) {
     
     char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     board* b_2 = parse_fen(fen);
-    //free(b);
-    //b = board_alloc();
+    free(b);
+    b = board_alloc();
     set_standard(b);
     printf("Board before init %" PRIu64 "\n", b->white | b->black);
     if ((b->white | b-> black) != 0xFFFF00000000FFFF) {
@@ -159,9 +159,11 @@ int main(void) {
     b_2->castle_w_r = b->castle_w_r;                               
     b_2->castle_b_l = b->castle_b_l;                               
     b_2->castle_b_r = b->castle_b_r;                               
-
+    printf("Board equals sanity %d\n", board_equals(b, b));
     if (!board_equals(b, b_2)) {
        printf("Incorrect fen position parsing new board %" PRIu64 " correct board %" PRIu64 "\n", b_2->white | b_2->black, b->white | b->black);
+       printf("Piece check %d\n", (b->queen_w == b_2->queen_w));
+       printf("The black king is %" PRIu64 "\n", b_2->king_w);
     } else {
         printf("Success on fen parsing\n");
     }
