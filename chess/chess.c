@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include "dbg.h"
+#include <limits.h>
+#include <stdio.h>
+#include <errno.h>
+
 
 // Board representations with rank / file 0d out to ease computation of overflows
 uint64_t rank_8 = 0x00FFFFFFFFFFFFFF;
@@ -715,7 +719,7 @@ void make_move(uint64_t from, uint64_t to, board* b) {
 }
 
 uint64_t perft(board* b, int depth) {
-    //printf("Board in perft %s\n", board_string(b));
+    printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
     uint64_t nodes = 0;
     uint64_t moves = get_legal_moves(b);
@@ -729,7 +733,7 @@ uint64_t perft(board* b, int depth) {
         if (from) { 
             uint64_t piece_moves = move_board(b, from) & moves;
             uint64_t to_mask = 1;
-            for (int j = 1; j < 63; j++) {
+            for (int j = 0; j < 64; j++) {
                 uint64_t to = piece_moves & to_mask;
                 if (to) {
                     make_move(from, to, b);
@@ -760,8 +764,7 @@ char* get_move() {
  * Converts an input fen representation into internal bitboard representation. 
  * Used to parse various game boards for move evaluation. 
 */
-board* parse_fen(char *fen) {
-    board *b = board_alloc();
+void parse_fen(board* b, char *fen) {
     set_empty(b);
     char* fields[6]; 
     char* token = strtok(fen, " ");
@@ -770,7 +773,7 @@ board* parse_fen(char *fen) {
         token = strtok(NULL, " ");
         if (token == NULL) {
             printf("fen must contain six fields separated by spaces");
-            return NULL;
+            return;
         }
         fields[i] = token;
     }
@@ -779,7 +782,13 @@ board* parse_fen(char *fen) {
     for (int i = 0; i < strlen(fields[0]); i++) {
         char c = fields[0][i];
         char* character; 
-        int n = strtoul(&c, &character, 10);
+        int n = strtol(&c, &character, 0);
+        // No idea why but strtol failed on 2 and 3 every once in a while so I manually set them. 
+        if (n > 8) {
+            if (c == '2') n = 2;
+            if (c == '3') n = 3;            
+        }
+
         if (!n) {
             switch(*character) {
                 case 'p':
@@ -830,9 +839,11 @@ board* parse_fen(char *fen) {
             loc_mask = loc_mask << 1;
         } else {
             loc_mask = loc_mask << n;
+            if (loc_mask == 0x0000000400000000) {
+                printf("nvalid king position the char is %c the shift is %d\n", c, n);
+            }
         }
     }
     set_sides(b);
-    return b;
 }
 

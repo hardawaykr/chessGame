@@ -5,13 +5,30 @@ int main(void) {
     set_standard(b);
     board* perft_board = board_alloc();
     set_standard(perft_board); 
-    uint64_t perft_test_1 = perft(perft_board, 6); 
+    uint64_t perft_test_1 = perft(perft_board, 1); 
     if (perft_test_1 != 400) {
         printf("Error invalid perft test 1 %" PRIu64 "\n", perft_test_1);
-        printf("The board after perft test 1 is %s\n",board_string(b) );
+        printf("The board after perft test 1 is %s\n",board_string(perft_board) );
     } else {
         printf("Success. First perft test success.\n");
     }
+    printf("\n\n\nSecond Perft test\n\n\n");
+    char fen_1[73] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+    parse_fen(perft_board, fen_1);
+    printf("The parsed board is  %s\n",board_string(perft_board));
+    printf("The king position is %" PRIu64 "\n", perft_board->king_w);
+    perft_board->castle_w_l = 1;
+    perft_board->castle_w_r = 1;
+    perft_board->castle_b_l = 1;
+    perft_board->castle_b_r = 1;
+    uint64_t perft_test_2 = perft(perft_board, 1); 
+    if (perft_test_2 != 48) {
+        printf("Error invalid perft test 2 %" PRIu64 "\n", perft_test_2);
+        printf("The board after perft test 2 is %s\n",board_string(perft_board));
+    } else {
+        printf("Success. Second perft test success.\n");
+    }
+    printf("\n\n\nSecond Perft test\n\n\n");
     // Basic test for white legal move generation. 
     uint64_t white_legal_moves = w_legal_moves(b);
     if (white_legal_moves != 0x00000000FFFF0000) {
@@ -143,7 +160,8 @@ int main(void) {
 
     
     char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-    board* b_2 = parse_fen(fen);
+    board* b_2 = board_alloc();
+    parse_fen(b_2, fen);
     free(b);
     b = board_alloc();
     set_standard(b);
@@ -174,10 +192,10 @@ int main(void) {
     printf("\n");
 
                                     
-    free(b);
     free(b_2);
     char fen_2[] = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
-    b = parse_fen(fen_2);
+    parse_fen(b, fen_2);
+    free(b);
     printf("The board is %s\n", board_string(b));
     return 0;
 }    
