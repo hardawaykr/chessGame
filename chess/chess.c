@@ -146,6 +146,7 @@ int set_empty(board* b) {
 
     return 0;
 }
+
 int board_equals(board* b1, board* b2) {
     int p_w = b1->pawn_w == b2->pawn_w;
     int p_b = b1->pawn_b == b2->pawn_b;
@@ -171,6 +172,64 @@ int board_equals(board* b1, board* b2) {
     int t = b1->turn == b2->turn;
     return p_w & p_b & q_w & q_b & q_w & k_w & k_b & r_w & r_b & n_w & n_b & b_b & b_w \
           & w & b & c_w_r & c_w_l & c_b_r & c_b_l & t;
+}
+
+char*  board_string(board* b) {
+    uint64_t mask = 0x0100000000000000;
+    char* b_str = calloc(sizeof(char), 73);
+    strcat(b_str, "\n");
+    for (int i = 1; i <= 64; i++) {
+        uint64_t pawn_w = b->pawn_w & mask;
+        uint64_t queen_w = b->queen_w & mask;
+        uint64_t king_w = b->king_w & mask;
+        uint64_t rook_w = b->rook_w & mask;
+        uint64_t knight_w = b->knight_w & mask;
+        uint64_t bishop_w = b->bishop_w & mask;
+        uint64_t pawn_b = b->pawn_b & mask;
+        uint64_t queen_b = b->queen_b & mask;
+        uint64_t king_b = b->king_b & mask;
+        uint64_t rook_b = b->rook_b & mask;
+        uint64_t knight_b = b->knight_b & mask;
+        uint64_t bishop_b = b->bishop_b & mask;
+
+        if (pawn_w) {
+            strcat(b_str, "P");
+        } else if (pawn_b) {
+            strcat(b_str, "p");
+        } else if (queen_w) {
+            strcat(b_str, "Q");
+        } else if (queen_b) {
+            strcat(b_str, "q");
+        } else if (king_w) {
+            strcat(b_str, "K");
+        } else if (king_b) {
+            strcat(b_str, "k");
+        } else if (rook_w) {
+            strcat(b_str, "R");
+        } else if (rook_b) {
+            strcat(b_str, "r");
+        } else if (knight_w) {
+            strcat(b_str, "N");
+        } else if (knight_b) {
+            strcat(b_str, "n");
+        } else if (bishop_w) {
+            strcat(b_str, "B");
+        } else if (bishop_b) {
+            strcat(b_str, "b");
+        } else {
+            strcat(b_str, "-");
+        } 
+
+        if (!(i % 8)) {
+            strcat(b_str, "\n");
+            mask = mask >> 15;
+            continue;
+        }
+
+        mask = mask << 1;
+    }
+    strcat(b_str, "\n");
+    return b_str;
 }
 /* 
  * Generates all legal moves for the king and returns them in one combined board. 
@@ -656,14 +715,16 @@ void make_move(uint64_t from, uint64_t to, board* b) {
 }
 
 uint64_t perft(board* b, int depth) {
+    //printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
     uint64_t nodes = 0;
     uint64_t moves = get_legal_moves(b);
     uint64_t move_pieces = (queen_move_board(moves, get_opp_side(b), get_curr_side(b)) \
                                 | knight_move_board(moves, get_opp_side(b))) & get_curr_side(b);
    
+
     uint64_t from_mask = 1;
-    for (int i = 1; i < 63; i++) {
+    for (int i = 0; i < 64; i++) {
         uint64_t from = move_pieces & from_mask;
         if (from) { 
             uint64_t piece_moves = move_board(b, from) & moves;
@@ -758,14 +819,15 @@ board* parse_fen(char *fen) {
                     b->bishop_w |= loc_mask;
                     break;
                 case '/':
-                    loc_mask = loc_mask >> 15;
+                    if (!loc_mask) {
+                        loc_mask = 0x0001000000000000;
+                    } else {
+                        loc_mask = loc_mask >> 16;
+                    }
                 default:
                     continue;
             }
             loc_mask = loc_mask << 1;
-            if (!loc_mask) {
-                loc_mask = 0x8000000000000000;
-            }
         } else {
             loc_mask = loc_mask << n;
         }

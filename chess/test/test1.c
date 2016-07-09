@@ -5,10 +5,10 @@ int main(void) {
     set_standard(b);
     board* perft_board = board_alloc();
     set_standard(perft_board); 
-    uint64_t perft_test_1 = perft(perft_board, 1); 
-    if (perft_test_1 != 20) {
+    uint64_t perft_test_1 = perft(perft_board, 6); 
+    if (perft_test_1 != 400) {
         printf("Error invalid perft test 1 %" PRIu64 "\n", perft_test_1);
-        printf("The board after perft test 1 is %" PRIu64 "\n", perft_board->white | perft_board->black);
+        printf("The board after perft test 1 is %s\n",board_string(b) );
     } else {
         printf("Success. First perft test success.\n");
     }
@@ -33,9 +33,9 @@ int main(void) {
         printf("Success.\n");
     }
 
-    uint64_t knight_w_moves = knight_move_board(b->knight_w, b->white);
-    if (knight_w_moves != 0x0000000000A50000) {
-        printf("Error knight board %" PRIu64 "\n", knight_w_moves);
+    uint64_t knight_b_moves = knight_move_board(b->knight_b, b->black);
+    if (knight_b_moves != 0x0000000000A50000) {
+        printf("Error knight board %" PRIu64 "\n", knight_b_moves);
     } else {
         printf("knight success \n");
     }
@@ -147,6 +147,8 @@ int main(void) {
     free(b);
     b = board_alloc();
     set_standard(b);
+    printf("The standard board looks like\n");
+    printf("The board is %s\n", board_string(b));
     printf("Board before init %" PRIu64 "\n", b->white | b->black);
     if ((b->white | b-> black) != 0xFFFF00000000FFFF) {
         printf("Board initialization error %" PRIu64 "\n", b->white | b->black);
@@ -167,8 +169,15 @@ int main(void) {
     } else {
         printf("Success on fen parsing\n");
     }
+    printf("\nThe parsed fen board is \n");
+    printf("The board is %s\n", board_string(b_2));
+    printf("\n");
+
                                     
     free(b);
     free(b_2);
+    char fen_2[] = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
+    b = parse_fen(fen_2);
+    printf("The board is %s\n", board_string(b));
     return 0;
 }    
