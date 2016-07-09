@@ -524,6 +524,8 @@ uint64_t w_legal_moves(board* b) {
     board_delete(b_unpinned);
     board_delete(b_pinners);
 
+
+
     return pinned_piece_moves | w_move_board(b);
 }
 
@@ -640,9 +642,13 @@ void make_move_b(uint64_t from, uint64_t to, board* b) {
     } else if (king) {
         b->king_b &= ~from;
         b->king_b |= to;
+        b->castle_b_l = 0;
+        b->castle_b_r = 0;
     } else if (rook) {
         b->rook_b &= ~from;
         b->rook_b |= to;
+        b->castle_b_l = 0;
+        b->castle_b_r = 0;
     } else if (knight) {
         b->knight_b &= ~from;
         b->knight_b |= to;
@@ -678,9 +684,13 @@ void make_move_w(uint64_t from, uint64_t to, board* b) {
     } else if (king) {
         b->king_w &= ~from;
         b->king_w |= to;
+        b->castle_w_l = 0;
+        b->castle_w_r = 0;
     } else if (rook) {
         b->rook_w &= ~from;
         b->rook_w |= to;
+        b->castle_w_l = 0;
+        b->castle_w_r = 0;
     } else if (knight) {
         b->knight_w &= ~from;
         b->knight_w |= to;
@@ -718,8 +728,152 @@ void make_move(uint64_t from, uint64_t to, board* b) {
     b->turn = !b->turn;
 }
 
+int make_castle_b_r(board *b) {
+    // King and rook starting positions for w left castle. 
+    // No need to check if king or rook in these positions as booleans verify they haven't been moved.
+    uint64_t king = 0x1000000000000000;
+    uint64_t rook = 0x8000000000000000;
+    uint64_t king_right = 0x2000000000000000;
+    // Check if rook can move to kings left and if no enemy piece ie no obstruction for castling.
+    uint64_t can_castle = rook_move_board(rook, b->white, b->black) & king_right & ~b->black;
+
+    // Move rook and king to correct positions if castle availiable. 
+    if (can_castle) {
+        make_move_w(rook, king_right, b);
+        make_move_w(king, 0x4000000000000000, b);
+        b->turn = 1;
+        return 1;
+    }
+    return 0;
+}
+
+int make_castle_b_l(board *b) {
+    // King and rook starting positions for w left castle. 
+    // No need to check if king or rook in these positions as booleans verify they haven't been moved.
+    uint64_t king = 0x1000000000000000;
+    uint64_t rook = 0x0100000000000000;
+    uint64_t king_left = 0x0800000000000000;
+    // Check if rook can move to kings left and if no enemy piece ie no obstruction for castling.
+    uint64_t can_castle = rook_move_board(rook, b->white, b->black) & king_left & ~b->black;
+
+    // Move rook and king to correct positions if castle availiable. 
+    if (can_castle) {
+        make_move_w(rook, king_left, b);
+        make_move_w(king, 0x0400000000000000, b);
+        b->turn = 1;
+        return 1;
+    }
+    return 0;
+}
+
+int make_castle_w_r(board *b) {
+    // King and rook starting positions for w left castle. 
+    // No need to check if king or rook in these positions as booleans verify they haven't been moved.
+    uint64_t king = 0x10;
+    uint64_t rook = 0x80;
+    uint64_t king_right = 0x20;
+    // Check if rook can move to kings left and if no enemy piece ie no obstruction for castling.
+    uint64_t can_castle = rook_move_board(rook, b->white, b->black) & king_right & ~b->black;
+
+    // Move rook and king to correct positions if castle availiable. 
+    if (can_castle) {
+        make_move_w(rook, king_right, b);
+        make_move_w(king, 0x2, b);
+        b->turn = 0;
+        return 1;
+    }
+    return 0;
+}
+
+int make_castle_w_l(board *b) {
+    // King and rook starting positions for w left castle. 
+    // No need to check if king or rook in these positions as booleans verify they haven't been moved.
+    uint64_t king = 0x10;
+    uint64_t rook = 0x1;
+    uint64_t king_left = 0x8;
+    // Check if rook can move to kings left and if no enemy piece ie no obstruction for castling.
+    uint64_t can_castle = rook_move_board(rook, b->white, b->black) & king_left & ~b->black;
+
+    // Move rook and king to correct positions if castle availiable. 
+    if (can_castle) {
+        make_move_w(rook, king_left, b);
+        make_move_w(king, 0x4, b);
+        b->turn = 0;
+        return 1;
+    }
+    return 0;
+}
+
+void undo_castle_b_r(board *b) {
+    uint64_t king = 0x1000000000000000;
+    uint64_t rook = 0x8000000000000000;
+    uint64_t king_right = 0x2000000000000000;
+    uint64_t king_dest = 0x4000000000000000;
+
+    make_move_w(king_right, rook, b);
+    make_move_w(king_dest, king, b);
+    b->turn = 1;
+}
+
+void undo_castle_b_l(board *b) {
+    uint64_t king = 0x1000000000000000;
+    uint64_t rook = 0x0100000000000000;
+    uint64_t king_left = 0x0800000000000000;
+    uint64_t king_dest = 0x0400000000000000;
+
+    make_move_w(king_left, rook, b);
+    make_move_w(king_dest, king, b);
+    b->turn = 1;
+}
+
+void undo_castle_w_r(board *b) {
+    uint64_t king = 0x10;
+    uint64_t rook = 0x80;
+    uint64_t king_right = 0x20;
+    uint64_t king_dest = 0x2;
+
+    make_move_w(king_right, rook, b);
+    make_move_w(king_dest, king, b);
+    b->turn = 0;
+}
+
+void undo_castle_w_l(board *b) {
+    uint64_t king = 0x10;
+    uint64_t rook = 0x1;
+    uint64_t king_left = 0x8;
+    uint64_t king_dest = 0x4;
+
+    make_move_w(king_left, rook, b);
+    make_move_w(king_dest, king, b);
+    b->turn = 0;
+}
+
+int make_castle_l(board *b) {
+    return (b->turn) ? make_castle_w_l(b) : make_castle_b_l(b);
+}
+
+int make_castle_r(board *b) {
+    return (b->turn) ? make_castle_w_r(b): make_castle_b_r(b);
+}
+
+void undo_castle_l(board *b) {
+    (!b->turn) ? undo_castle_w_l(b): undo_castle_b_l(b);
+}
+
+void undo_castle_r(board *b) {
+    (!b->turn) ? undo_castle_w_r(b): undo_castle_b_r(b);
+}
+
+int can_castle_l(board *b) {
+    return (b->turn) ? b->castle_w_l: b->castle_b_l;
+}
+
+int can_castle_r(board *b) {
+    return (b->turn) ? b->castle_w_r: b->castle_b_r;
+}
+
 uint64_t perft(board* b, int depth) {
-    printf("Board in perft %s\n", board_string(b));
+    //printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
     uint64_t nodes = 0;
     uint64_t moves = get_legal_moves(b);
@@ -746,6 +900,20 @@ uint64_t perft(board* b, int depth) {
         from_mask = from_mask << 1;
     }
 
+    // Compute castling boards 
+    if (can_castle_l(b)) {
+        if (make_castle_l(b)) {
+            nodes += perft(b, depth - 1);
+            undo_castle_l(b);
+        }
+    } 
+    if (can_castle_r(b)) {
+        if (make_castle_r(b)) {
+            nodes += perft(b, depth - 1);
+            undo_castle_r(b);
+        }
+    }
+
     return nodes;
 }
 
@@ -754,10 +922,6 @@ void play_game() {
     set_standard(b);
     
 
-}
-
-char* get_move() {
-    return "";
 }
 
 /* 
