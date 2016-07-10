@@ -5,22 +5,20 @@ int main(void) {
     set_standard(b);
     board* perft_board = board_alloc();
     set_standard(perft_board); 
-    uint64_t perft_test_1 = perft(perft_board, 1); 
+    uint64_t perft_test_1 = perft(perft_board, 2); 
     if (perft_test_1 != 400) {
         printf("Error invalid perft test 1 %" PRIu64 "\n", perft_test_1);
         printf("The board after perft test 1 is %s\n",board_string(perft_board) );
     } else {
         printf("Success. First perft test success.\n");
     }
-    printf("\n\n\nSecond Perft test\n\n\n");
     char fen_1[73] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
     parse_fen(perft_board, fen_1);
-    printf("The parsed board is  %s\n",board_string(perft_board));
-    printf("The king position is %" PRIu64 "\n", perft_board->king_w);
     perft_board->castle_w_l = 1;
     perft_board->castle_w_r = 1;
     perft_board->castle_b_l = 1;
     perft_board->castle_b_r = 1;
+    printf("\n\n\nSecond Perft test\n\n\n");
     uint64_t perft_test_2 = perft(perft_board, 1); 
     if (perft_test_2 != 48) {
         printf("Error invalid perft test 2 %" PRIu64 "\n", perft_test_2);
@@ -43,7 +41,7 @@ int main(void) {
     if (b->white != 0x000000000000FFFF) {
         printf("Error bad white side %" PRIu64 "\n", b->white);
     }
-    uint64_t king_w_moves = king_move_board(b->king_w, b->white, b->black, b->castle_w_l, b->castle_w_r); 
+    uint64_t king_w_moves = king_move_board(b->king_w, b->white, b->black); 
     if (king_w_moves != 0) {
         printf("Error invalid move board %" PRIu64 "\n", king_w_moves);
     } else {
@@ -135,29 +133,6 @@ int main(void) {
         printf("Success on queen 2\n");
     }
     
-    // King castle test
-    uint64_t king_moves = king_move_board(0x1000000000000000, 0x1000000000000000, 0x8000000000000000, 1, 0);
-    if (king_moves != 0x6838000000000000) {
-       printf("Incorrect king castle test %" PRIu64 "\n", king_moves);
-    } else {
-        printf("Success on king castle test\n");
-    }
-        
-    king_moves = king_move_board(0x1000000000000000, 0x1000000000000000, 0x8100000000000000, 1, 1);
-    if (king_moves != 0x6C38000000000000) {
-       printf("Incorrect king castle test 2 %" PRIu64 "\n", king_moves);
-    } else {
-        printf("Success on king castle test 2\n");
-    }
-
-    // Castle test with piece at space adjacent to king after castle
-    king_moves = king_move_board(0x0000000000000010, 0x0000000000000011, 2, 0, 1);
-    if (king_moves != 0x0000000000003828) {
-       printf("Incorrect king castle test 3 %" PRIu64 "\n", king_moves);
-    } else {
-        printf("Success on king castle test 3\n");
-    }
-
     
     char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     board* b_2 = board_alloc();

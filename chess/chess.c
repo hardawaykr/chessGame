@@ -239,7 +239,7 @@ char*  board_string(board* b) {
  * Generates all legal moves for the king and returns them in one combined board. 
  * Requires both castling booleans for the current side to generate castling move for king. 
 */
-uint64_t king_move_board(uint64_t king_board, uint64_t own_side, uint64_t other_side, int can_castle_left, int can_castle_right) {
+uint64_t king_move_board(uint64_t king_board, uint64_t own_side, uint64_t other_side) {
     uint64_t pos_1 = king_board << 8;
     uint64_t pos_2 = (king_board & file_h) << 9;
     uint64_t pos_3 = (king_board & file_h) << 1;
@@ -249,27 +249,8 @@ uint64_t king_move_board(uint64_t king_board, uint64_t own_side, uint64_t other_
     uint64_t pos_7 = (king_board & file_a) >> 1;
     uint64_t pos_8 = (king_board & file_a) << 7;
 
-    uint64_t pos_9 = 0;
-    uint64_t pos_10 = 0;
-    if (can_castle_right) {
-        pos_9 = ((king_board & file_a) >> 1) & ~other_side & ~own_side;
-        pos_9 = ((pos_9 & file_a) >> 1) & ~other_side & ~own_side;
 
-        // Check that next space is free for rook to slide through
-        uint64_t space = ((pos_9 & file_a) >> 1) & (other_side | own_side);
-        if (space) {
-            pos_9 = 0;
-        }
-
-    }
-
-    if (can_castle_left) {
-        pos_10 = ((king_board & file_h) << 1) & ~other_side & ~ own_side;
-        pos_10 = ((pos_10 & file_h) << 1) & ~other_side;
-
-    } 
-
-    return (pos_1 | pos_2 | pos_3 | pos_4 | pos_5 | pos_6 | pos_7 | pos_8 | pos_9 | pos_10) & ~own_side;
+    return (pos_1 | pos_2 | pos_3 | pos_4 | pos_5 | pos_6 | pos_7 | pos_8) & ~own_side;
 }
 
 uint64_t knight_move_board(uint64_t knight, uint64_t own_side) {
@@ -292,8 +273,8 @@ uint64_t pawn_w_move_board(uint64_t pawn, uint64_t white, uint64_t black) {
     uint64_t pos_2 = (pawn << 8) & ~black;
     // Right diagonal attack
     uint64_t pos_3 = ((pawn & file_h) << 9) & black;
-    // Two step forward
-    uint64_t pos_4 = (pawn & ~rank_2) << 16 & ~black;
+    // Two step forward 
+    uint64_t pos_4 = ((pawn & ~rank_2) << 8 & ~black & ~white) << 8 & ~black;
 
     return (pos_1 | pos_2 | pos_3 | pos_4) & ~white;
 }
@@ -305,8 +286,8 @@ uint64_t pawn_b_move_board(uint64_t pawn, uint64_t white, uint64_t black) {
     uint64_t pos_2 = (pawn >> 8) & ~white;
     // Right diagonal attack
     uint64_t pos_3 = ((pawn & file_h) << 7) & white;
-    // Two step forward
-    uint64_t pos_4 = (pawn & ~rank_7) >> 16 & ~white;
+    // Two step forward, & with pos_2 to make sure intermediate space is free.
+    uint64_t pos_4 = ((pawn & ~rank_7) >> 8 & ~black & ~white) << 8 & ~white;
 
     return (pos_1 | pos_2 | pos_3 | pos_4) & ~black;
 }
@@ -394,7 +375,7 @@ uint64_t queen_move_board(uint64_t queen, uint64_t own_side, uint64_t other_side
 uint64_t b_move_board(board *b) {
     uint64_t pawn_moves = pawn_b_move_board(b->pawn_b, b->white, b->black);
     uint64_t queen_moves = queen_move_board(b->queen_b, b->black, b->white);
-    uint64_t king_moves = king_move_board(b->king_b, b->black, b->white, b->castle_b_l, b->castle_b_r);
+    uint64_t king_moves = king_move_board(b->king_b, b->black, b->white);
     uint64_t rook_moves = rook_move_board(b->rook_b, b->black, b->white);
     uint64_t knight_moves = knight_move_board(b->knight_b, b->black);
     uint64_t bishop_moves = bishop_move_board(b->bishop_b, b->black, b->white);
@@ -405,7 +386,7 @@ uint64_t b_move_board(board *b) {
 uint64_t w_move_board(board *b) {
     uint64_t pawn_moves = pawn_w_move_board(b->pawn_w, b->white, b->black);
     uint64_t queen_moves = queen_move_board(b->queen_w, b->white, b->black);
-    uint64_t king_moves = king_move_board(b->king_w, b->white, b->black, b->castle_w_l, b->castle_w_r);
+    uint64_t king_moves = king_move_board(b->king_w, b->white, b->black);
     uint64_t rook_moves = rook_move_board(b->rook_w, b->white, b->black);
     uint64_t knight_moves = knight_move_board(b->knight_w, b->white);
     uint64_t bishop_moves = bishop_move_board(b->bishop_w, b->white, b->black);
@@ -581,7 +562,7 @@ uint64_t move_board_w(board* b, uint64_t piece) {
     } else if (queen) {
         return queen_move_board(piece, b->white, b->black);
     } else if (king) {
-        return king_move_board(piece, b->white, b->black, b->castle_w_l, b->castle_w_r);
+        return king_move_board(piece, b->white, b->black);
     } else if (rook) {
         return rook_move_board(piece, b->white, b->black);
     } else if (knight) {
@@ -605,7 +586,7 @@ uint64_t move_board_b(board* b, uint64_t piece) {
     } else if (queen) {
         return queen_move_board(piece, b->black, b->white);
     } else if (king) {
-        return king_move_board(piece, b->black, b->white, b->castle_b_l, b->castle_b_r);
+        return king_move_board(piece, b->black, b->white);
     } else if (rook) {
         return rook_move_board(piece, b->black, b->white);
     } else if (knight) {
@@ -778,7 +759,7 @@ int make_castle_w_r(board *b) {
     // Move rook and king to correct positions if castle availiable. 
     if (can_castle) {
         make_move_w(rook, king_right, b);
-        make_move_w(king, 0x2, b);
+        make_move_w(king, 0x40, b);
         b->turn = 0;
         return 1;
     }
@@ -812,7 +793,7 @@ void undo_castle_b_r(board *b) {
 
     make_move_w(king_right, rook, b);
     make_move_w(king_dest, king, b);
-    b->turn = 1;
+    b->turn = 0;
 }
 
 void undo_castle_b_l(board *b) {
@@ -823,18 +804,18 @@ void undo_castle_b_l(board *b) {
 
     make_move_w(king_left, rook, b);
     make_move_w(king_dest, king, b);
-    b->turn = 1;
+    b->turn = 0;
 }
 
 void undo_castle_w_r(board *b) {
     uint64_t king = 0x10;
     uint64_t rook = 0x80;
     uint64_t king_right = 0x20;
-    uint64_t king_dest = 0x2;
+    uint64_t king_dest = 0x40;
 
     make_move_w(king_right, rook, b);
     make_move_w(king_dest, king, b);
-    b->turn = 0;
+    b->turn = 1;
 }
 
 void undo_castle_w_l(board *b) {
@@ -845,7 +826,7 @@ void undo_castle_w_l(board *b) {
 
     make_move_w(king_left, rook, b);
     make_move_w(king_dest, king, b);
-    b->turn = 0;
+    b->turn = 1;
 }
 
 int make_castle_l(board *b) {
@@ -865,15 +846,15 @@ void undo_castle_r(board *b) {
 }
 
 int can_castle_l(board *b) {
-    return (b->turn) ? b->castle_w_l: b->castle_b_l;
+    return ((b->turn) ? b->castle_w_l: b->castle_b_l);
 }
 
 int can_castle_r(board *b) {
-    return (b->turn) ? b->castle_w_r: b->castle_b_r;
+    return ((b->turn) ? b->castle_w_r: b->castle_b_r);
 }
 
 uint64_t perft(board* b, int depth) {
-    //printf("Board in perft %s\n", board_string(b));
+    printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
     uint64_t nodes = 0;
     uint64_t moves = get_legal_moves(b);
@@ -882,17 +863,25 @@ uint64_t perft(board* b, int depth) {
    
 
     uint64_t from_mask = 1;
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0; i < 63; i++) {
         uint64_t from = move_pieces & from_mask;
         if (from) { 
             uint64_t piece_moves = move_board(b, from) & moves;
             uint64_t to_mask = 1;
-            for (int j = 0; j < 64; j++) {
+            for (int j = 0; j < 63; j++) {
                 uint64_t to = piece_moves & to_mask;
                 if (to) {
+                    int castle_w_l = b->castle_w_l;
+                    int castle_w_r = b->castle_w_r;
+                    int castle_b_l = b->castle_b_l;
+                    int castle_b_r = b->castle_b_r;
                     make_move(from, to, b);
                     nodes += perft(b, depth - 1);
                     undo_move(from, to, b);
+                    b->castle_w_l = castle_w_l;
+                    b->castle_w_r = castle_w_r;
+                    b->castle_b_l = castle_b_l;
+                    b->castle_b_r = castle_b_r;
                 }
                 to_mask = to_mask << 1;
             }
@@ -902,13 +891,22 @@ uint64_t perft(board* b, int depth) {
 
     // Compute castling boards 
     if (can_castle_l(b)) {
+        int castle_w_l = b->castle_w_l;
+        int castle_w_r = b->castle_w_r;
+        int castle_b_l = b->castle_b_l;
+        int castle_b_r = b->castle_b_r;
         if (make_castle_l(b)) {
             nodes += perft(b, depth - 1);
             undo_castle_l(b);
         }
+        b->castle_w_l = castle_w_l;
+        b->castle_w_r = castle_w_r;
+        b->castle_b_l = castle_b_l;
+        b->castle_b_r = castle_b_r;
     } 
     if (can_castle_r(b)) {
         if (make_castle_r(b)) {
+            printf("here\n");
             nodes += perft(b, depth - 1);
             undo_castle_r(b);
         }
