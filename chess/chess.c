@@ -287,7 +287,7 @@ uint64_t pawn_b_move_board(uint64_t pawn, uint64_t white, uint64_t black) {
     // Right diagonal attack
     uint64_t pos_3 = ((pawn & file_h) << 7) & white;
     // Two step forward, & with pos_2 to make sure intermediate space is free.
-    uint64_t pos_4 = ((pawn & ~rank_7) >> 8 & ~black & ~white) << 8 & ~white;
+    uint64_t pos_4 = ((pawn & ~rank_7) >> 8 & ~black & ~white) >> 8 & ~white;
 
     return (pos_1 | pos_2 | pos_3 | pos_4) & ~black;
 }
@@ -854,7 +854,7 @@ int can_castle_r(board *b) {
 }
 
 uint64_t perft(board* b, int depth) {
-    printf("Board in perft %s\n", board_string(b));
+    //printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
     uint64_t nodes = 0;
     uint64_t moves = get_legal_moves(b);
