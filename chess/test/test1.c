@@ -1,8 +1,6 @@
 #include "../chess.c"
 
 int main(void) {
-    board* b = board_alloc();
-    set_standard(b);
     board* perft_board = board_alloc();
     set_standard(perft_board); 
     uint64_t perft_test_1 = perft(perft_board, 2); 
@@ -18,7 +16,6 @@ int main(void) {
     perft_board->castle_w_r = 1;
     perft_board->castle_b_l = 1;
     perft_board->castle_b_r = 1;
-    printf("\n\n\nSecond Perft test\n\n\n");
     uint64_t perft_test_2 = perft(perft_board, 1); 
     if (perft_test_2 != 48) {
         printf("Error invalid perft test 2 %" PRIu64 "\n", perft_test_2);
@@ -26,8 +23,9 @@ int main(void) {
     } else {
         printf("Success. Second perft test success.\n");
     }
-    printf("\n\n\nSecond Perft test\n\n\n");
     // Basic test for white legal move generation. 
+    board* b = board_alloc();
+    set_standard(b);
     uint64_t white_legal_moves = w_legal_moves(b);
     if (white_legal_moves != 0x00000000FFFF0000) {
         printf("Error invalid legal white move gen %" PRIu64 "\n", white_legal_moves);
@@ -48,7 +46,7 @@ int main(void) {
         printf("Success.\n");
     }
 
-    uint64_t knight_b_moves = knight_move_board(b->knight_b, b->black);
+    uint64_t knight_b_moves = knight_move_board(b->knight_w, b->white);
     if (knight_b_moves != 0x0000000000A50000) {
         printf("Error knight board %" PRIu64 "\n", knight_b_moves);
     } else {
@@ -140,9 +138,6 @@ int main(void) {
     free(b);
     b = board_alloc();
     set_standard(b);
-    printf("The standard board looks like\n");
-    printf("The board is %s\n", board_string(b));
-    printf("Board before init %" PRIu64 "\n", b->white | b->black);
     if ((b->white | b-> black) != 0xFFFF00000000FFFF) {
         printf("Board initialization error %" PRIu64 "\n", b->white | b->black);
     } else {
@@ -154,7 +149,6 @@ int main(void) {
     b_2->castle_w_r = b->castle_w_r;                               
     b_2->castle_b_l = b->castle_b_l;                               
     b_2->castle_b_r = b->castle_b_r;                               
-    printf("Board equals sanity %d\n", board_equals(b, b));
     if (!board_equals(b, b_2)) {
        printf("Incorrect fen position parsing new board %" PRIu64 " correct board %" PRIu64 "\n", b_2->white | b_2->black, b->white | b->black);
        printf("Piece check %d\n", (b->queen_w == b_2->queen_w));
@@ -162,11 +156,7 @@ int main(void) {
     } else {
         printf("Success on fen parsing\n");
     }
-    printf("\nThe parsed fen board is \n");
-    printf("The board is %s\n", board_string(b_2));
-    printf("\n");
 
-                                    
     free(b_2);
     char fen_2[] = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8";
     parse_fen(b, fen_2);
