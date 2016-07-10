@@ -1,1 +1,1 @@
-Simple web based chess game. Plan to design ai opponent for users to play against.
+Chess engine written in c. Plan to use engine to design a chess ai. 
