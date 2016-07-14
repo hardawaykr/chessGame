@@ -8,6 +8,7 @@
 #include <errno.h>
 
 
+
 // Board representations with rank / file 0d out to ease computation of overflows
 uint64_t rank_8 = 0x00FFFFFFFFFFFFFF;
 uint64_t rank_7 = 0xFF00FFFFFFFFFFFF;
@@ -69,6 +70,8 @@ void board_delete(board *b) {
     free(b);
 }
 
+void make_move_b(uint64_t from, uint64_t to, board* b);
+void make_move_w(uint64_t from, uint64_t to, board* b);
 /* 
  * Returns all pieces for currently active side. 
 */
@@ -312,7 +315,7 @@ uint64_t rook_move_board(uint64_t rook, uint64_t own_side, uint64_t other_side) 
     south_ray |= ((south_ray & ~other_side) >> 8) & ~own_side;
 
     // East ray 
-    uint64_t east_ray = (rook << 1) & ~own_side;
+    uint64_t east_ray = ((rook & file_h) << 1) & ~own_side;
     east_ray |= ((east_ray & file_h & ~other_side) << 1) & ~own_side;
     east_ray |= ((east_ray & file_h & ~other_side) << 1) & ~own_side;
     east_ray |= ((east_ray & file_h & ~other_side) << 1) & ~own_side;
@@ -330,6 +333,98 @@ uint64_t rook_move_board(uint64_t rook, uint64_t own_side, uint64_t other_side) 
     west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
 
     return north_ray | south_ray | east_ray | west_ray;
+}
+
+uint64_t rook_attacks_to_piece(uint64_t rook, uint64_t own_side, uint64_t other_side, uint64_t piece) {
+    // North ray 
+    uint64_t north_ray = (rook << 8) & ~own_side;
+    north_ray |= ((north_ray & ~other_side) << 8) & ~own_side;
+    north_ray |= ((north_ray & ~other_side) << 8) & ~own_side;
+    north_ray |= ((north_ray & ~other_side) << 8) & ~own_side;
+    north_ray |= ((north_ray & ~other_side) << 8) & ~own_side;
+    north_ray |= ((north_ray & ~other_side) << 8) & ~own_side;
+    north_ray |= ((north_ray & ~other_side) << 8) & ~own_side;
+
+    if (!(north_ray & piece)) north_ray = 0;
+
+    // South ray 
+    uint64_t south_ray = (rook >> 8) & ~own_side;
+    south_ray |= ((south_ray & ~other_side) >> 8) & ~own_side;
+    south_ray |= ((south_ray & ~other_side) >> 8) & ~own_side;
+    south_ray |= ((south_ray & ~other_side) >> 8) & ~own_side;
+    south_ray |= ((south_ray & ~other_side) >> 8) & ~own_side;
+    south_ray |= ((south_ray & ~other_side) >> 8) & ~own_side;
+    south_ray |= ((south_ray & ~other_side) >> 8) & ~own_side;
+
+    if (!(south_ray & piece)) south_ray = 0;
+
+    // East ray 
+    uint64_t east_ray = ((rook & file_h) << 1) & ~own_side;
+    east_ray |= ((east_ray & file_h & ~other_side) << 1) & ~own_side;
+    east_ray |= ((east_ray & file_h & ~other_side) << 1) & ~own_side;
+    east_ray |= ((east_ray & file_h & ~other_side) << 1) & ~own_side;
+    east_ray |= ((east_ray & file_h & ~other_side) << 1) & ~own_side;
+    east_ray |= ((east_ray & file_h & ~other_side) << 1) & ~own_side;
+    east_ray |= ((east_ray & file_h & ~other_side) << 1) & ~own_side;
+
+    if (!(east_ray & piece)) east_ray = 0;
+
+    // West ray 
+    uint64_t west_ray = ((rook & file_a) >> 1) & ~own_side;
+    west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
+    west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
+    west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
+    west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
+    west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
+    west_ray |= ((west_ray & file_a & ~other_side) >> 1) & ~own_side;
+
+    if (!(west_ray & piece)) west_ray = 0;
+
+    return north_ray | south_ray | east_ray | west_ray;
+}
+
+uint64_t bishop_attacks_to_piece(uint64_t bishop, uint64_t own_side, uint64_t other_side, uint64_t piece) {
+    uint64_t ne_ray = ((bishop & file_h) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+    ne_ray |= ((ne_ray & file_h & ~other_side) << 9) & ~own_side;
+
+    if (!(ne_ray & piece)) ne_ray = 0;
+
+    uint64_t se_ray = ((bishop & file_h) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+    se_ray |= ((se_ray & file_h & ~other_side) >> 7) & ~own_side;
+
+    if (!(se_ray & piece)) se_ray = 0;
+
+    uint64_t sw_ray = ((bishop & file_a) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+    sw_ray |= ((sw_ray & file_a & ~other_side) >> 9) & ~own_side;
+
+    if (!(sw_ray & piece)) sw_ray = 0;
+
+    uint64_t nw_ray = ((bishop & file_a) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+    nw_ray |= ((nw_ray & file_a & ~other_side) << 7) & ~own_side;
+
+    if (!(nw_ray & piece)) nw_ray = 0;
+
+    return ne_ray | se_ray | sw_ray | nw_ray;
 }
 
 uint64_t bishop_move_board(uint64_t bishop, uint64_t own_side, uint64_t other_side) {
@@ -370,6 +465,10 @@ uint64_t bishop_move_board(uint64_t bishop, uint64_t own_side, uint64_t other_si
 
 uint64_t queen_move_board(uint64_t queen, uint64_t own_side, uint64_t other_side) {
     return bishop_move_board(queen, own_side, other_side) | rook_move_board(queen, own_side, other_side);
+}
+
+uint64_t queen_attacks_to_piece(uint64_t queen, uint64_t own_side, uint64_t other_side, uint64_t piece) {
+    return bishop_attacks_to_piece(queen, own_side, other_side, piece) | rook_attacks_to_piece(queen, own_side, other_side, piece);
 }
 
 uint64_t b_move_board(board *b) {
@@ -474,6 +573,37 @@ void get_intersecting_b(board *b, uint64_t spaces) {
 }
 
 uint64_t w_legal_moves(board* b) {
+    // Determine if in check and return only moves that escape check. 
+    uint64_t black_moves = b_move_board(b);
+
+    // In check
+    if (black_moves & b->king_w) {
+        uint64_t moves = 0;
+        uint64_t psuedo_legal_moves = w_move_board(b);
+        uint64_t rook_attacks_to_king = rook_attacks_to_piece(b->rook_b | b->queen_b, b->black, b->white, b->king_w);
+        uint64_t bishop_attacks_to_king = bishop_attacks_to_piece(b->bishop_b | b->queen_b, b->black, b->white, b->king_w);
+        uint64_t attack_paths_to_king = rook_attacks_to_king | bishop_attacks_to_king; 
+        // Find interpositions
+        if (attack_paths_to_king) {
+            moves |= (psuedo_legal_moves & attack_paths_to_king);
+        }
+        // Compute capture moves.
+        moves |= psuedo_legal_moves & pawn_w_move_board(b->king_w, b->white, b->black) & b->pawn_b;
+        moves |= psuedo_legal_moves & bishop_move_board(b->king_w, b->white, b->black) & (b->bishop_b | b->queen_b);
+        moves |= psuedo_legal_moves & knight_move_board(b->king_w, b->white) & b->knight_b;
+        moves |= psuedo_legal_moves & rook_move_board(b->king_w, b->white, b->black) & (b->rook_b | b->queen_b);
+        uint64_t mask = 1;
+        uint64_t king_moves = king_move_board(b->king_w, b->white, b->black);
+        while (mask != 0) {
+            if (king_moves & mask) {
+               if (!(black_moves & mask)) {
+                   moves |= mask;
+               }
+            }
+            mask = mask << 1;
+        }
+        return moves;
+    }
     // First generate moves of pinned pieces, ie pieces limited by placing king in check
     uint64_t attacks_to_king = queen_move_board(b->king_w, b->black, b->white)  & b->black;
     // Board with potentially pinned pieces ie pieces in possible rook attack path to king.
@@ -484,33 +614,83 @@ uint64_t w_legal_moves(board* b) {
     board* b_unpinned = board_alloc();
     board_copy(b_unpinned, b);
     get_intersecting_w(b_unpinned, ~(b_pinned->white));
-    // Re-compute rook attacks with new board.
+    // Re-compute queen attacks with new board.
     attacks_to_king = queen_move_board(b_unpinned->king_w, b_unpinned->black, b_unpinned->white) & b_unpinned->black;
     
     // Find all enemy, black, pinning pieces by finding black intersection with queen attacks from king
     board* b_pinners = board_alloc();
     board_copy(b_pinners, b);
     get_intersecting_b(b_pinners, attacks_to_king);
-    uint64_t pinners = b_pinners->rook_b | b_pinners->queen_b;
-    uint64_t pinner_attacks = queen_move_board(pinners, b_pinners->black, b_pinners->white);
+    uint64_t pinners = b_pinners->rook_b | b_pinners->bishop_b | b_pinners->queen_b;
+    // Rook attacks are actual rooks and horizontal / vertical attacks of queen
+    uint64_t rook_pinner_attacks = rook_move_board(b_pinners->rook_b | b_pinners->queen_b, b_pinners->black, b_pinners->white);
+    // Bishop attacks are actual bishop attacks and diagonal attacks of queen
+    uint64_t bishop_pinner_attacks = bishop_move_board(b_pinners->bishop_b | b_pinners->queen_b, b_pinners->black, b_pinners->white);
     // Intersect pinner_attacks with pinned pieces to find actually pinned pieces.
+    uint64_t pinner_attacks = rook_pinner_attacks | bishop_pinner_attacks;
     get_intersecting_w(b_pinned, pinner_attacks);
     uint64_t pinned_piece_moves = w_move_board(b_pinned);
     // Intersect with pinner_attacks and pinners to find moves which capture pinner or move along attacking path.
     pinned_piece_moves &= (pinner_attacks | pinners); 
+    // Find board of actually unpinned pieces by intersecting with flip of all pinners 
+    board_copy(b_unpinned, b);
+    get_intersecting_w(b_unpinned, ~(b_pinned->white));
+    uint64_t unpinned_piece_moves = w_move_board(b_unpinned);
 
-    // Remove pinned pieces from rest of move generation.
-    get_intersecting_w(b, ~(b_pinned->white));
+    // Remove all king moves that place it in check.
+    uint64_t mask = 1;
+    uint64_t king_moves = king_move_board(b->king_w, b->white, b->black);
+    uint64_t black_side = b->black;
+    b->white |= king_moves;
+    black_moves = b_move_board(b);
+    b->black = black_side;
+    while (mask != 0) {
+        if (king_moves & mask) {
+            if ((black_moves & mask)) {
+                printf("\n\nhere\n\n");
+                unpinned_piece_moves &= ~mask;
+            }
+        }
+        mask = mask << 1;
+    }
     board_delete(b_pinned);
     board_delete(b_unpinned);
     board_delete(b_pinners);
 
-
-
-    return pinned_piece_moves | w_move_board(b);
+    return pinned_piece_moves | unpinned_piece_moves;
 }
 
 uint64_t b_legal_moves(board* b) {
+    uint64_t white_moves = w_move_board(b);
+
+    // In check
+    if (white_moves & b->king_b) {
+        uint64_t moves = 0;
+        uint64_t psuedo_legal_moves = b_move_board(b);
+        uint64_t rook_attacks_to_king = rook_attacks_to_piece(b->rook_w | b->queen_w, b->white, b->black, b->king_b);
+        uint64_t bishop_attacks_to_king = bishop_attacks_to_piece(b->bishop_w | b->queen_w, b->white, b->black, b->king_b);
+        uint64_t attack_paths_to_king = rook_attacks_to_king | bishop_attacks_to_king; 
+        // Find interpositions
+        if (attack_paths_to_king) {
+            moves |= (psuedo_legal_moves & attack_paths_to_king);
+        }
+        // Compute capture moves.
+        moves |= psuedo_legal_moves & pawn_b_move_board(b->king_b, b->white, b->black) & b->pawn_w;
+        moves |= psuedo_legal_moves & bishop_move_board(b->king_b, b->black, b->white) & (b->bishop_w | b->queen_w);
+        moves |= psuedo_legal_moves & knight_move_board(b->king_b, b->black) & b->knight_w;
+        moves |= psuedo_legal_moves & rook_move_board(b->king_b, b->black, b->white) & (b->rook_w | b->queen_w);
+        uint64_t mask = 1;
+        uint64_t king_moves = king_move_board(b->king_b, b->black, b->white);
+        while (mask != 0) {
+            if (king_moves & mask) {
+               if (!(white_moves & mask)) {
+                   moves |= mask;
+               }
+            }
+            mask = mask << 1;
+        }
+        return moves;
+    }
     // First generate moves of pinned pieces, ie pieces limited by placing king in check
     uint64_t attacks_to_king = queen_move_board(b->king_b, b->white, b->black)  & b->white;
     // Board with potentially pinned pieces ie pieces in possible rook attack path to king.
@@ -520,7 +700,7 @@ uint64_t b_legal_moves(board* b) {
     // Compute new board without pinned pieces by finding intersection of board and the flip of all pinned pieces. 
     board* b_unpinned = board_alloc();
     board_copy(b_unpinned, b);
-    get_intersecting_b(b_unpinned, ~(b_pinned->black));
+    get_intersecting_w(b_unpinned, ~(b_pinned->black));
     // Re-compute rook attacks with new board.
     attacks_to_king = queen_move_board(b_unpinned->king_b, b_unpinned->white, b_unpinned->black) & b_unpinned->white;
     
@@ -528,21 +708,39 @@ uint64_t b_legal_moves(board* b) {
     board* b_pinners = board_alloc();
     board_copy(b_pinners, b);
     get_intersecting_w(b_pinners, attacks_to_king);
-    uint64_t pinners = b_pinners->rook_w | b_pinners->queen_w;
-    uint64_t pinner_attacks = queen_move_board(pinners, b_pinners->white, b_pinners->black);
+
+    uint64_t pinners = b_pinners->rook_w | b_pinners->bishop_w | b_pinners->queen_w;
+    // Rook attacks are actual rooks and horizontal / vertical attacks of queen
+    uint64_t rook_pinner_attacks = rook_move_board(b_pinners->rook_w | b_pinners->queen_w, b_pinners->white, b_pinners->black);
+    // Bishop attacks are actual bishop attacks and diagonal attacks of queen
+    uint64_t bishop_pinner_attacks = bishop_move_board(b_pinners->bishop_w | b_pinners->queen_w, b_pinners->white, b_pinners->black);
     // Intersect pinner_attacks with pinned pieces to find actually pinned pieces.
+    uint64_t pinner_attacks = rook_pinner_attacks | bishop_pinner_attacks;
     get_intersecting_b(b_pinned, pinner_attacks);
     uint64_t pinned_piece_moves = b_move_board(b_pinned);
     // Intersect with pinner_attacks and pinners to find moves which capture pinner or move along attacking path.
     pinned_piece_moves &= (pinner_attacks | pinners); 
+    // Find board of actually unpinned pieces by intersecting with flip of all pinners 
+    board_copy(b_unpinned, b);
+    get_intersecting_b(b_unpinned, ~(b_pinned->black));
+    uint64_t unpinned_piece_moves = b_move_board(b_unpinned);
 
-    // Remove pinned pieces from rest of move generation.
-    get_intersecting_b(b, ~(b_pinned->black));
+    // Remove all king moves that place it in check.
+    uint64_t mask = 1;
+    uint64_t king_moves = king_move_board(b->king_b, b->black, b->white);
+    while (mask != 0) {
+        if (king_moves & mask) {
+           if ((white_moves & mask)) {
+               unpinned_piece_moves &= ~mask;
+           }
+        }
+        mask = mask << 1;
+    }
     board_delete(b_pinned);
     board_delete(b_unpinned);
     board_delete(b_pinners);
 
-    return pinned_piece_moves | b_move_board(b);
+    return pinned_piece_moves | unpinned_piece_moves;
 }
 
 uint64_t get_legal_moves(board *b) {
@@ -641,6 +839,10 @@ void make_move_b(uint64_t from, uint64_t to, board* b) {
     b->black &= ~from;
     b->black |= to;
 
+    if (b->white & to) {
+        make_move_w(to, 0, b);
+    }
+
 }
 
 /* 
@@ -682,6 +884,10 @@ void make_move_w(uint64_t from, uint64_t to, board* b) {
 
     b->white &= ~from;
     b->white |= to;
+
+    if (b->black & to) {
+        make_move_b(to, 0, b);
+    }
 
 }
 
@@ -867,7 +1073,7 @@ int can_castle_r(board *b) {
 }
 
 uint64_t perft(board* b, int depth) {
-    //printf("Board in perft %s\n", board_string(b));
+    printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
     uint64_t nodes = 0;
     uint64_t moves = get_legal_moves(b);
