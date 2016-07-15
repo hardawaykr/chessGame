@@ -1062,9 +1062,7 @@ int can_castle_r(board *b) {
 }
 
 uint64_t perft(board* b, int depth) {
-    if (depth == 0) {
-        printf("Board in perft %s\n", board_string(b));
-    }
+    printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
     uint64_t nodes = 0;
     uint64_t moves = get_legal_moves(b);
@@ -1139,16 +1137,18 @@ void parse_fen(board* b, char *fen) {
     uint64_t loc_mask = 0x0100000000000000;
     for (int i = 0; i < strlen(fields[0]); i++) {
         char c = fields[0][i];
-        char* character; 
-        int n = strtol(&c, &character, 0);
-        // No idea why but strtol failed on 2 and 3 every once in a while so I manually set them. 
-        if (n > 8) {
-            if (c == '2') n = 2;
-            if (c == '3') n = 3;            
-        }
+        int n = 0;
+        if (c == '1') n = 1;
+        if (c == '2') n = 2;
+        if (c == '3') n = 3;            
+        if (c == '4') n = 4;
+        if (c == '5') n = 5;
+        if (c == '6') n = 6;
+        if (c == '7') n = 7;
+        if (c == '8') n = 8;
 
         if (!n) {
-            switch(*character) {
+            switch(c) {
                 case 'p':
                     b->pawn_b |= loc_mask;
                     break;
@@ -1197,9 +1197,6 @@ void parse_fen(board* b, char *fen) {
             loc_mask = loc_mask << 1;
         } else {
             loc_mask = loc_mask << n;
-            if (loc_mask == 0x0000000400000000) {
-                printf("nvalid king position the char is %c the shift is %d\n", c, n);
-            }
         }
     }
     if (fields[1][0] == 'w') {

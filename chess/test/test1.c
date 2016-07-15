@@ -14,8 +14,8 @@ int main(void) {
     parse_fen(perft_board, fen_1);
     perft_board->castle_w_l = 0;
     perft_board->castle_w_r = 0;
-    perft_board->castle_b_l = 0;
-    perft_board->castle_b_r = 0;
+    perft_board->castle_b_l = 1;
+    perft_board->castle_b_r = 1;
     uint64_t perft_test_2 = perft(perft_board, 1); 
     if (perft_test_2 != 48) {
         printf("Error invalid perft test 2 %" PRIu64 "\n", perft_test_2);
