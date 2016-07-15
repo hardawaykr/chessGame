@@ -640,14 +640,13 @@ uint64_t w_legal_moves(board* b) {
     // Remove all king moves that place it in check.
     uint64_t mask = 1;
     uint64_t king_moves = king_move_board(b->king_w, b->white, b->black);
-    uint64_t black_side = b->black;
+    uint64_t white_side = b->white;
     b->white |= king_moves;
     black_moves = b_move_board(b);
-    b->black = black_side;
+    b->white = white_side;
     while (mask != 0) {
         if (king_moves & mask) {
             if ((black_moves & mask)) {
-                printf("\n\nhere\n\n");
                 unpinned_piece_moves &= ~mask;
             }
         }
@@ -724,10 +723,13 @@ uint64_t b_legal_moves(board* b) {
     board_copy(b_unpinned, b);
     get_intersecting_b(b_unpinned, ~(b_pinned->black));
     uint64_t unpinned_piece_moves = b_move_board(b_unpinned);
-
     // Remove all king moves that place it in check.
     uint64_t mask = 1;
     uint64_t king_moves = king_move_board(b->king_b, b->black, b->white);
+    uint64_t black_side = b->black;
+    b->black |= king_moves;
+    white_moves = w_move_board(b);
+    b->black = black_side;
     while (mask != 0) {
         if (king_moves & mask) {
            if ((white_moves & mask)) {
@@ -906,13 +908,8 @@ void undo_move_w(uint64_t from, uint64_t to, board* b) {
     make_move_w(to, from, b);
 }
 
-void undo_move(uint64_t from, uint64_t to, board* b, int c_w_l, int c_w_r, int c_b_l, int c_b_r) {
-    (!b->turn) ? undo_move_w(from, to, b): undo_move_b(from, to, b);
-    b->turn = !b->turn;
-    b->castle_w_l = c_w_l;
-    b->castle_w_r = c_w_r;
-    b->castle_b_l = c_b_l;
-    b->castle_b_r = c_b_r;
+void undo_move(uint64_t from, uint64_t to, board* b, board* old_board) {
+    board_copy(b, old_board);
 }
 
 void make_move(uint64_t from, uint64_t to, board* b) {
@@ -1048,20 +1045,12 @@ int make_castle_r(board *b) {
     return (b->turn) ? make_castle_w_r(b): make_castle_b_r(b);
 }
 
-void undo_castle_l(board *b, int c_w_l, int c_w_r, int c_b_l, int c_b_r) {
-    (!b->turn) ? undo_castle_w_l(b): undo_castle_b_l(b);
-    b->castle_w_l = c_w_l;
-    b->castle_b_l = c_b_l;
-    b->castle_w_r = c_w_r;
-    b->castle_b_r = c_b_r;
+void undo_castle_l(board *b, board* old_board) {
+    board_copy(b, old_board);
 }
 
-void undo_castle_r(board *b, int c_w_l,  int c_w_r, int c_b_l,  int c_b_r) {
-    (!b->turn) ? undo_castle_w_r(b): undo_castle_b_r(b);
-    b->castle_w_l = c_w_l;
-    b->castle_b_l = c_b_l;
-    b->castle_w_r = c_w_r;
-    b->castle_b_r = c_b_r;
+void undo_castle_r(board *b, board* old_board) {
+    board_copy(b, old_board);
 }
 
 int can_castle_l(board *b) {
@@ -1073,17 +1062,17 @@ int can_castle_r(board *b) {
 }
 
 uint64_t perft(board* b, int depth) {
-    printf("Board in perft %s\n", board_string(b));
+    if (depth == 0) {
+        printf("Board in perft %s\n", board_string(b));
+    }
     if (!depth) return 1;
     uint64_t nodes = 0;
     uint64_t moves = get_legal_moves(b);
     uint64_t move_pieces = (queen_move_board(moves, get_opp_side(b), get_curr_side(b)) \
                                 | knight_move_board(moves, get_opp_side(b))) & get_curr_side(b);
    
-    int castle_w_l = b->castle_w_l;
-    int castle_w_r = b->castle_w_r;
-    int castle_b_l = b->castle_b_l;
-    int castle_b_r = b->castle_b_r;
+    board* b_copy = board_alloc();
+    board_copy(b_copy, b);
 
     uint64_t from_mask = 1;
     for (int i = 0; i < 63; i++) {
@@ -1096,7 +1085,7 @@ uint64_t perft(board* b, int depth) {
                 if (to) {
                     make_move(from, to, b);
                     nodes += perft(b, depth - 1);
-                    undo_move(from, to, b, castle_w_l, castle_w_r, castle_b_l, castle_b_r);
+                    board_copy(b, b_copy);
                 }
                 to_mask = to_mask << 1;
             }
@@ -1108,15 +1097,16 @@ uint64_t perft(board* b, int depth) {
     if (can_castle_l(b)) {
         if (make_castle_l(b)) {
             nodes += perft(b, depth - 1);
-            undo_castle_l(b, castle_w_l, castle_w_r, castle_b_l, castle_b_r);
+            board_copy(b, b_copy);
         }
     } 
     if (can_castle_r(b)) {
         if (make_castle_r(b)) {
             nodes += perft(b, depth - 1);
-            undo_castle_r(b, castle_w_l, castle_w_r, castle_b_l, castle_b_r);
+            board_copy(b, b_copy);
         }
     }
+    board_delete(b_copy);
 
     return nodes;
 }
