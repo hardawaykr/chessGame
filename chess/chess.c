@@ -594,10 +594,14 @@ uint64_t w_legal_moves(board* b) {
         moves |= psuedo_legal_moves & rook_move_board(b->king_w, b->white, b->black) & (b->rook_b | b->queen_b);
         uint64_t mask = 1;
         uint64_t king_moves = king_move_board(b->king_w, b->white, b->black);
+        uint64_t white_side = b->white;
+        b->white |= king_moves;
+        black_moves = b_move_board(b);
+        b->white = white_side;
         while (mask != 0) {
             if (king_moves & mask) {
                if (!(black_moves & mask)) {
-                   moves |= mask;
+                    moves |= mask;
                }
             }
             mask = mask << 1;
