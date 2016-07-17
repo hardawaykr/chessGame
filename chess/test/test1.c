@@ -16,7 +16,7 @@ int main(void) {
     perft_board->castle_w_r = 0;
     perft_board->castle_b_l = 1;
     perft_board->castle_b_r = 1;
-    uint64_t perft_test_2 = perft(perft_board, 1); 
+    uint64_t perft_test_2 = perft(perft_board, 2); 
     if (perft_test_2 != 48) {
         printf("Error invalid perft test 2 %" PRIu64 "\n", perft_test_2);
         printf("The board after perft test 2 is %s\n",board_string(perft_board));

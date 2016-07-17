@@ -579,7 +579,11 @@ uint64_t w_legal_moves(board* b) {
     // In check
     if (black_moves & b->king_w) {
         uint64_t moves = 0;
+        // Remove king from psuedo legal. Will generate separately at end.
+        uint64_t king = b->king_w;
+        b->king_w = 0;
         uint64_t psuedo_legal_moves = w_move_board(b);
+        b->king_w = king;
         uint64_t rook_attacks_to_king = rook_attacks_to_piece(b->rook_b | b->queen_b, b->black, b->white, b->king_w);
         uint64_t bishop_attacks_to_king = bishop_attacks_to_piece(b->bishop_b | b->queen_b, b->black, b->white, b->king_w);
         uint64_t attack_paths_to_king = rook_attacks_to_king | bishop_attacks_to_king; 
@@ -592,20 +596,13 @@ uint64_t w_legal_moves(board* b) {
         moves |= psuedo_legal_moves & bishop_move_board(b->king_w, b->white, b->black) & (b->bishop_b | b->queen_b);
         moves |= psuedo_legal_moves & knight_move_board(b->king_w, b->white) & b->knight_b;
         moves |= psuedo_legal_moves & rook_move_board(b->king_w, b->white, b->black) & (b->rook_b | b->queen_b);
-        uint64_t mask = 1;
+        // Compute king moves. Add unchecked king moves as "white" pieces to remove moves still being attacked.
         uint64_t king_moves = king_move_board(b->king_w, b->white, b->black);
         uint64_t white_side = b->white;
         b->white |= king_moves;
         black_moves = b_move_board(b);
+        moves |= (king_moves & ~black_moves);
         b->white = white_side;
-        while (mask != 0) {
-            if (king_moves & mask) {
-               if (!(black_moves & mask)) {
-                    moves |= mask;
-               }
-            }
-            mask = mask << 1;
-        }
         return moves;
     }
     // First generate moves of pinned pieces, ie pieces limited by placing king in check
@@ -642,20 +639,14 @@ uint64_t w_legal_moves(board* b) {
     uint64_t unpinned_piece_moves = w_move_board(b_unpinned);
 
     // Remove all king moves that place it in check.
-    uint64_t mask = 1;
     uint64_t king_moves = king_move_board(b->king_w, b->white, b->black);
     uint64_t white_side = b->white;
     b->white |= king_moves;
+    // Compute black captures with king moves as "pieces" to account for attack squares.
     black_moves = b_move_board(b);
+    // Mask with flip of black moves to remove any king moves into black move squares.
+    unpinned_piece_moves |= (king_moves & ~black_moves);
     b->white = white_side;
-    while (mask != 0) {
-        if (king_moves & mask) {
-            if ((black_moves & mask)) {
-                unpinned_piece_moves &= ~mask;
-            }
-        }
-        mask = mask << 1;
-    }
     board_delete(b_pinned);
     board_delete(b_unpinned);
     board_delete(b_pinners);
@@ -669,7 +660,11 @@ uint64_t b_legal_moves(board* b) {
     // In check
     if (white_moves & b->king_b) {
         uint64_t moves = 0;
+        // Remove king from psuedo legal. Will generate separately at end.
+        uint64_t king = b->king_b;
+        b->king_b = 0;
         uint64_t psuedo_legal_moves = b_move_board(b);
+        b->king_b = king;
         uint64_t rook_attacks_to_king = rook_attacks_to_piece(b->rook_w | b->queen_w, b->white, b->black, b->king_b);
         uint64_t bishop_attacks_to_king = bishop_attacks_to_piece(b->bishop_w | b->queen_w, b->white, b->black, b->king_b);
         uint64_t attack_paths_to_king = rook_attacks_to_king | bishop_attacks_to_king; 
@@ -682,17 +677,15 @@ uint64_t b_legal_moves(board* b) {
         moves |= psuedo_legal_moves & bishop_move_board(b->king_b, b->black, b->white) & (b->bishop_w | b->queen_w);
         moves |= psuedo_legal_moves & knight_move_board(b->king_b, b->black) & b->knight_w;
         moves |= psuedo_legal_moves & rook_move_board(b->king_b, b->black, b->white) & (b->rook_w | b->queen_w);
-        uint64_t mask = 1;
         uint64_t king_moves = king_move_board(b->king_b, b->black, b->white);
-        while (mask != 0) {
-            if (king_moves & mask) {
-               if (!(white_moves & mask)) {
-                   moves |= mask;
-               }
-            }
-            mask = mask << 1;
-        }
+        // Compute king moves. Add unchecked king moves as "black" pieces to remove moves still being attacked.
+        uint64_t black_side = b->black;
+        b->black |= king_moves;
+        white_moves = w_move_board(b);
+        moves |= (king_moves & ~white_moves);
+        b->black = black_side;
         return moves;
+
     }
     // First generate moves of pinned pieces, ie pieces limited by placing king in check
     uint64_t attacks_to_king = queen_move_board(b->king_b, b->white, b->black)  & b->white;
@@ -732,16 +725,11 @@ uint64_t b_legal_moves(board* b) {
     uint64_t king_moves = king_move_board(b->king_b, b->black, b->white);
     uint64_t black_side = b->black;
     b->black |= king_moves;
+    // Compute white captures with king moves as "pieces" to account for attack squares.
     white_moves = w_move_board(b);
+    // Mask with flip of white moves to remove any king moves into white move squares.
+    unpinned_piece_moves |= (king_moves & ~white_moves);
     b->black = black_side;
-    while (mask != 0) {
-        if (king_moves & mask) {
-           if ((white_moves & mask)) {
-               unpinned_piece_moves &= ~mask;
-           }
-        }
-        mask = mask << 1;
-    }
     board_delete(b_pinned);
     board_delete(b_unpinned);
     board_delete(b_pinners);
@@ -766,7 +754,13 @@ uint64_t move_board_w(board* b, uint64_t piece) {
     } else if (queen) {
         return queen_move_board(piece, b->white, b->black);
     } else if (king) {
-        return king_move_board(piece, b->white, b->black);
+        // Remove king moves into attacked squares
+        uint64_t king_moves = king_move_board(piece, b->white, b->black);
+        uint64_t white = b->white;
+        b->white |= king_moves;
+        king_moves &= ~(b_move_board(b));
+        b->white = white;
+        return king_moves;
     } else if (rook) {
         return rook_move_board(piece, b->white, b->black);
     } else if (knight) {
@@ -790,7 +784,13 @@ uint64_t move_board_b(board* b, uint64_t piece) {
     } else if (queen) {
         return queen_move_board(piece, b->black, b->white);
     } else if (king) {
-        return king_move_board(piece, b->black, b->white);
+        // Remove king moves into attacked squares
+        uint64_t king_moves = king_move_board(piece, b->black, b->white);
+        uint64_t black = b->black;
+        b->white |= king_moves;
+        king_moves &= ~(b_move_board(b));
+        b->black = black;
+        return king_moves;
     } else if (rook) {
         return rook_move_board(piece, b->black, b->white);
     } else if (knight) {
