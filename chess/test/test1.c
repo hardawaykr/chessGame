@@ -16,10 +16,41 @@ int main(void) {
     perft_board->castle_w_r = 0;
     perft_board->castle_b_l = 0;
     perft_board->castle_b_r = 0;
-    uint64_t perft_test_2 = perft(perft_board, 3); 
-    if (perft_test_2 != 48) {
-        printf("Error invalid perft test 2 %" PRIu64 "\n", perft_test_2);
+    printf("\n\n\nSecond test\n\n");
+    uint64_t perft_test_2 = perft(perft_board, 2); 
+    if (perft_test_2 != 191) {
+        printf("Error invalid perft test postion 3 %" PRIu64 "\n", perft_test_2);
         printf("The board after perft test 2 is %s\n",board_string(perft_board));
+    } else {
+        printf("Success. Second perft test success.\n");
+    }
+
+    char fen_3[73] = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
+    parse_fen(perft_board, fen_3);
+    perft_board->castle_w_l = 0;
+    perft_board->castle_w_r = 0;
+    perft_board->castle_b_l = 1;
+    perft_board->castle_b_r = 1;
+    printf("\n\n\nThird test\n\n");
+    uint64_t perft_test_3 = perft(perft_board, 2); 
+    if (perft_test_3 != 264) {
+        printf("Error invalid perft test position 4 %" PRIu64 "\n", perft_test_3);
+        printf("The board after perft test 3 is %s\n", board_string(perft_board));
+    } else {
+        printf("Success. Second perft test success.\n");
+    }
+
+    char fen_4[73] = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8 ";
+    parse_fen(perft_board, fen_4);
+    perft_board->castle_w_l = 1;
+    perft_board->castle_w_r = 1;
+    perft_board->castle_b_l = 0;
+    perft_board->castle_b_r = 0;
+    printf("\n\n\nFourth test\n\n");
+    uint64_t perft_test_4 = perft(perft_board, 1); 
+    if (perft_test_4 != 44) {
+        printf("Error invalid perft test position 5 %" PRIu64 "\n", perft_test_4);
+        printf("The board after perft test 4 is %s\n", board_string(perft_board));
     } else {
         printf("Success. Second perft test success.\n");
     }

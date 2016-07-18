@@ -709,7 +709,6 @@ uint64_t b_legal_moves(board* b) {
     board* b_pinners = board_alloc();
     board_copy(b_pinners, b);
     get_intersecting_w(b_pinners, attacks_to_king);
-
     uint64_t pinners = b_pinners->rook_w | b_pinners->bishop_w | b_pinners->queen_w;
     // Rook attacks are actual rooks and horizontal / vertical attacks of queen
     uint64_t rook_pinner_attacks = rook_move_board(b_pinners->rook_w | b_pinners->queen_w, b_pinners->white, b_pinners->black);
@@ -731,7 +730,6 @@ uint64_t b_legal_moves(board* b) {
     uint64_t unpinned_piece_moves = b_move_board(b_unpinned);
     b_unpinned->king_b = king;
     // Remove all king moves that place it in check.
-    uint64_t mask = 1;
     uint64_t king_moves = king_move_board(b->king_b, b->black, b->white);
     uint64_t black_side = b->black;
     b->black |= king_moves;
@@ -1087,12 +1085,12 @@ uint64_t perft(board* b, int depth) {
     board_copy(b_copy, b);
 
     uint64_t from_mask = 1;
-    for (int i = 0; i < 63; i++) {
+    while (from_mask) {
         uint64_t from = move_pieces & from_mask;
         if (from) { 
             uint64_t piece_moves = move_board(b, from) & moves;
             uint64_t to_mask = 1;
-            for (int j = 0; j < 63; j++) {
+            while (to_mask) {
                 uint64_t to = piece_moves & to_mask;
                 if (to) {
                     make_move(from, to, b);
