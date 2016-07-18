@@ -3,20 +3,20 @@
 int main(void) {
     board* perft_board = board_alloc();
     set_standard(perft_board); 
-    uint64_t perft_test_1 = perft(perft_board, 3); 
+    uint64_t perft_test_1 = perft(perft_board, 4); 
     if (perft_test_1 != 400) {
         printf("Error invalid perft test 1 %" PRIu64 "\n", perft_test_1);
         printf("The board after perft test 1 is %s\n",board_string(perft_board) );
     } else {
         printf("Success. First perft test success.\n");
     }
-    char fen_1[73] = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
+    char fen_1[73] = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1";
     parse_fen(perft_board, fen_1);
     perft_board->castle_w_l = 0;
     perft_board->castle_w_r = 0;
-    perft_board->castle_b_l = 1;
-    perft_board->castle_b_r = 1;
-    uint64_t perft_test_2 = perft(perft_board, 2); 
+    perft_board->castle_b_l = 0;
+    perft_board->castle_b_r = 0;
+    uint64_t perft_test_2 = perft(perft_board, 3); 
     if (perft_test_2 != 48) {
         printf("Error invalid perft test 2 %" PRIu64 "\n", perft_test_2);
         printf("The board after perft test 2 is %s\n",board_string(perft_board));
