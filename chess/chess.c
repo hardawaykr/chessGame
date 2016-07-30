@@ -52,7 +52,7 @@ typedef struct board {
     int castle_b_l;
     int castle_b_r;
 
-    // 1 if whites turn, 0 if blacks
+    // 1 if white's turn, 0 if black's
     int turn; 
 
 } board;
@@ -529,6 +529,11 @@ int in_check_b(board* b) {
     return is_attacked_b(b->king_b, b);    
 }
 
+int in_check(board* b, int side) {
+    return (side) ? in_check_w(b): in_check_b(b);
+}
+
+
 board* board_copy(board *new_board, board* b) {
     new_board->pawn_w = b->pawn_w;
     new_board->queen_w = b->queen_w;
@@ -701,7 +706,7 @@ uint64_t b_legal_moves(board* b) {
     // Compute new board without pinned pieces by finding intersection of board and the flip of all pinned pieces. 
     board* b_unpinned = board_alloc();
     board_copy(b_unpinned, b);
-    get_intersecting_w(b_unpinned, ~(b_pinned->black));
+    get_intersecting_b(b_unpinned, ~(b_pinned->black));
     // Re-compute rook attacks with new board.
     attacks_to_king = queen_move_board(b->king_b, b_unpinned->black, b_unpinned->white);
     
@@ -895,7 +900,7 @@ void make_move_w(uint64_t from, uint64_t to, board* b) {
         b->bishop_w &= ~from;
         b->bishop_w |= to;
     }
-
+    
     b->white &= ~from;
     b->white |= to;
 
@@ -1089,15 +1094,20 @@ uint64_t perft(board* b, int depth) {
         uint64_t from = move_pieces & from_mask;
         if (from) { 
             uint64_t piece_moves = move_board(b, from) & moves;
-            uint64_t to_mask = 1;
-            while (to_mask) {
-                uint64_t to = piece_moves & to_mask;
-                if (to) {
-                    make_move(from, to, b);
-                    nodes += perft(b, depth - 1);
-                    board_copy(b, b_copy);
+            if (piece_moves) {
+                uint64_t to_mask = 1;
+                while (to_mask) {
+                    uint64_t to = piece_moves & to_mask;
+                    if (to) {
+                        make_move(from, to, b);
+                        // If the current side is not in check after move, use node.
+                        if (!in_check(b, !b->turn)) {
+                            nodes += perft(b, depth - 1);
+                        }
+                        board_copy(b, b_copy);
+                    }
+                    to_mask = to_mask << 1;
                 }
-                to_mask = to_mask << 1;
             }
         }
         from_mask = from_mask << 1;
