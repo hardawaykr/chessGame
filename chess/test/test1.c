@@ -50,6 +50,20 @@ int main(void) {
     } else {
         printf("Success. Second perft test success. pos 5 depth 1\n");
     }
+
+    char fen_5[73] = "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10";
+    parse_fen(perft_board, fen_5);
+    perft_board->castle_w_l = 0;
+    perft_board->castle_w_r = 0;
+    perft_board->castle_b_l = 0;
+    perft_board->castle_b_r = 0;
+    printf("\n\n\nFifth test\n\n");
+    uint64_t perft_test_5 = perft(perft_board, 2); 
+    if (perft_test_5 != 2079) {
+        printf("Error invalid perft test position 6 depth 1 %" PRIu64 "\n", perft_test_5);
+    } else {
+        printf("Success. Fifth perft test success. pos 6 depth 1\n");
+    }
     // Basic test for white legal move generation. 
     board* b = board_alloc();
     set_standard(b);

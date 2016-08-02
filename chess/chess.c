@@ -578,6 +578,18 @@ void get_intersecting_b(board *b, uint64_t spaces) {
 }
 
 uint64_t w_legal_moves(board* b) {
+    // First check for promotions
+    uint64_t promotion = b->pawn_w & ~rank_8;
+    if (promotion) {
+        printf("\n\nhere\n\n");
+        // If promoted piece append new pieces to each availiable promotion type
+        b->knight_w |= promotion;
+        b->rook_w |= promotion;
+        b->bishop_w |= promotion;
+        b->queen_w |= promotion;
+        // Remove pawn
+        b->pawn_w &= ~promotion;
+    }
     // Determine if in check and return only moves that escape check. 
     uint64_t black_moves = b_move_board(b);
 
@@ -665,6 +677,17 @@ uint64_t w_legal_moves(board* b) {
 }
 
 uint64_t b_legal_moves(board* b) {
+    // First check for promotions
+    uint64_t promotion = b->pawn_b & ~rank_1;
+    if (promotion) {
+        // If promoted piece append new pieces to each availiable promotion type
+        b->knight_b |= promotion;
+        b->rook_b |= promotion;
+        b->bishop_b |= promotion;
+        b->queen_b |= promotion;
+        // Remove pawn
+        b->pawn_b &= ~promotion;
+    }
     uint64_t white_moves = w_move_board(b);
 
     // In check
@@ -1078,6 +1101,10 @@ int can_castle_r(board *b) {
     return ((b->turn) ? b->castle_w_r: b->castle_b_r);
 }
 
+int promotion(board* b, int side) {
+    return (side) ? b->pawn_w & ~rank_8: b->pawn_b & ~rank_1;
+}
+
 uint64_t perft(board* b, int depth) {
     //printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
@@ -1100,8 +1127,39 @@ uint64_t perft(board* b, int depth) {
                     uint64_t to = piece_moves & to_mask;
                     if (to) {
                         make_move(from, to, b);
+                        if (promotion(b, !b->turn)) {
+                            if (b->turn) { 
+                                uint64_t promoted = b->pawn_w & ~rank_8;
+                                b->pawn_w &= rank_8;
+                                b->knight_w |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->knight_w &= ~promoted;
+                                b->queen_w |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->queen_w &= ~promoted;
+                                b->bishop_w |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->bishop_w &= ~promoted;
+                                b->rook_w |= promoted;
+                                nodes += perft(b, depth - 1);
+                            } else { 
+                                uint64_t promoted = b->pawn_b & ~rank_1;
+                                b->pawn_b &= rank_1;
+                                b->knight_b |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->knight_b &= ~promoted;
+                                b->queen_b |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->queen_b &= ~promoted;
+                                b->bishop_b |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->bishop_b &= ~promoted;
+                                b->rook_b |= promoted;
+                                nodes += perft(b, depth - 1);
+                            }
+                        }
                         // If the current side is not in check after move, use node.
-                        if (!in_check(b, !b->turn)) {
+                        else if (!in_check(b, !b->turn)) {
                             nodes += perft(b, depth - 1);
                         }
                         board_copy(b, b_copy);
