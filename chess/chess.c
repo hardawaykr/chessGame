@@ -14,6 +14,8 @@ uint64_t rank_8 = 0x00FFFFFFFFFFFFFF;
 uint64_t rank_7 = 0xFF00FFFFFFFFFFFF;
 uint64_t rank_1 = 0xFFFFFFFFFFFFFF00;
 uint64_t rank_2 = 0xFFFFFFFFFFFF00FF;
+uint64_t rank_4 = ~0x00000000FF000000;
+uint64_t rank_5 = ~0x000000FF00000000;
 uint64_t file_a = 0xFEFEFEFEFEFEFEFE;
 uint64_t file_b = 0xFDFDFDFDFDFDFDFD;
 uint64_t file_h = 0x7F7F7F7F7F7F7F7F;
@@ -55,6 +57,9 @@ typedef struct board {
     // 1 if white's turn, 0 if black's
     int turn; 
 
+    // Boolean to track if last move involved two space pawn push for en passant
+    int en_passant;
+    uint64_t en_passant_target;
 } board;
 
 board* board_alloc() {
@@ -120,6 +125,9 @@ int set_standard(board* b) {
     b->castle_b_r = 0;
 
     b->turn = 1;
+
+    b->en_passant = 0;
+    b->en_passant_target = 0;
 
     return 0;
 }
@@ -473,6 +481,10 @@ uint64_t queen_attacks_to_piece(uint64_t queen, uint64_t own_side, uint64_t othe
 
 uint64_t b_move_board(board *b) {
     uint64_t pawn_moves = pawn_b_move_board(b->pawn_b, b->white, b->black);
+    // For en_passant capture, add target space to white to use as possible attack move for 
+    if (b->en_passant) {
+        pawn_moves |= pawn_b_move_board(b->pawn_b, b->en_passant_target | b->white, b->black);
+    }
     uint64_t queen_moves = queen_move_board(b->queen_b, b->black, b->white);
     uint64_t king_moves = king_move_board(b->king_b, b->black, b->white);
     uint64_t rook_moves = rook_move_board(b->rook_b, b->black, b->white);
@@ -484,6 +496,9 @@ uint64_t b_move_board(board *b) {
 
 uint64_t w_move_board(board *b) {
     uint64_t pawn_moves = pawn_w_move_board(b->pawn_w, b->white, b->black);
+    if (b->en_passant) {
+        pawn_moves |= pawn_w_move_board(b->pawn_w, b->white, b->black | b->en_passant_target);
+    }
     uint64_t queen_moves = queen_move_board(b->queen_w, b->white, b->black);
     uint64_t king_moves = king_move_board(b->king_w, b->white, b->black);
     uint64_t rook_moves = rook_move_board(b->rook_w, b->white, b->black);
@@ -578,18 +593,6 @@ void get_intersecting_b(board *b, uint64_t spaces) {
 }
 
 uint64_t w_legal_moves(board* b) {
-    // First check for promotions
-    uint64_t promotion = b->pawn_w & ~rank_8;
-    if (promotion) {
-        printf("\n\nhere\n\n");
-        // If promoted piece append new pieces to each availiable promotion type
-        b->knight_w |= promotion;
-        b->rook_w |= promotion;
-        b->bishop_w |= promotion;
-        b->queen_w |= promotion;
-        // Remove pawn
-        b->pawn_w &= ~promotion;
-    }
     // Determine if in check and return only moves that escape check. 
     uint64_t black_moves = b_move_board(b);
 
@@ -677,17 +680,6 @@ uint64_t w_legal_moves(board* b) {
 }
 
 uint64_t b_legal_moves(board* b) {
-    // First check for promotions
-    uint64_t promotion = b->pawn_b & ~rank_1;
-    if (promotion) {
-        // If promoted piece append new pieces to each availiable promotion type
-        b->knight_b |= promotion;
-        b->rook_b |= promotion;
-        b->bishop_b |= promotion;
-        b->queen_b |= promotion;
-        // Remove pawn
-        b->pawn_b &= ~promotion;
-    }
     uint64_t white_moves = w_move_board(b);
 
     // In check
@@ -857,6 +849,11 @@ void make_move_b(uint64_t from, uint64_t to, board* b) {
     if (pawn) {
         b->pawn_b &= ~from;
         b->pawn_b |= to;
+        // If pawn moving two spaces set en passant boolean. 
+        if ((from & ~rank_7) && (to & rank_5)) {
+            b->en_passant = 1;
+            b->en_passant_target = (from >> 8); 
+        }
     } else if (queen) {
         b->queen_b &= ~from;
         b->queen_b |= to;
@@ -903,6 +900,10 @@ void make_move_w(uint64_t from, uint64_t to, board* b) {
     if (pawn) {
         b->pawn_w &= ~from;
         b->pawn_w |= to;
+        if ((from & ~rank_2) && (to & rank_4)) {
+            b->en_passant = 1;
+            b->en_passant_target = (from << 8);
+        }
     } else if (queen) {
         b->queen_w &= ~from;
         b->queen_w |= to;
@@ -953,6 +954,8 @@ void undo_move(uint64_t from, uint64_t to, board* b, board* old_board) {
 }
 
 void make_move(uint64_t from, uint64_t to, board* b) {
+    // Set en_passant to false to remove last move.
+    b->en_passant = 0;
     (b->turn) ? make_move_w(from, to, b): make_move_b(from, to, b);
     b->turn = !b->turn;
 }

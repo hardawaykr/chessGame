@@ -3,7 +3,7 @@
 int main(void) {
     board* perft_board = board_alloc();
     set_standard(perft_board); 
-    uint64_t perft_test_1 = perft(perft_board, 4); 
+    uint64_t perft_test_1 = perft(perft_board, 3); 
     if (perft_test_1 != 8902) {
         printf("Error invalid perft test 1 %" PRIu64 "\n", perft_test_1);
     } else {
@@ -16,7 +16,7 @@ int main(void) {
     perft_board->castle_b_l = 0;
     perft_board->castle_b_r = 0;
     printf("\n\n\nSecond test\n\n");
-    uint64_t perft_test_2 = perft(perft_board, 2); 
+    uint64_t perft_test_2 = perft(perft_board, 3); 
     if (perft_test_2 != 191) {
         printf("Error invalid perft test postion 3 depth 2, %" PRIu64 "\n", perft_test_2);
     } else {
@@ -30,11 +30,11 @@ int main(void) {
     perft_board->castle_b_l = 1;
     perft_board->castle_b_r = 1;
     printf("\n\n\nThird test\n\n");
-    uint64_t perft_test_3 = perft(perft_board, 2); 
+    uint64_t perft_test_3 = perft(perft_board, 3); 
     if (perft_test_3 != 264) {
-        printf("Error invalid perft test position 4 depth 2, %" PRIu64 "\n", perft_test_3);
+        printf("Error invalid perft test position 4 depth 3, %" PRIu64 "\n", perft_test_3);
     } else {
-        printf("Success. Second perft test success. Pos 4 depth 2\n");
+        printf("Success. Second perft test success. Pos 4 depth 3\n");
     }
 
     char fen_4[73] = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8 ";
@@ -63,6 +63,20 @@ int main(void) {
         printf("Error invalid perft test position 6 depth 1 %" PRIu64 "\n", perft_test_5);
     } else {
         printf("Success. Fifth perft test success. pos 6 depth 1\n");
+    }
+
+    char fen_6[73] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 10";
+    parse_fen(perft_board, fen_6);
+    perft_board->castle_w_l = 1;
+    perft_board->castle_w_r = 1;
+    perft_board->castle_b_l = 1;
+    perft_board->castle_b_r = 1;
+    printf("\n\n\nFifth test\n\n");
+    uint64_t perft_test_6 = perft(perft_board, 2); 
+    if (perft_test_6 != 2039) {
+        printf("Error invalid perft test position 2 depth 2 %" PRIu64 "\n", perft_test_6);
+    } else {
+        printf("Success. Fifth perft test success. pos 2 depth 1\n");
     }
     // Basic test for white legal move generation. 
     board* b = board_alloc();
