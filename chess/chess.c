@@ -10,14 +10,20 @@
 
 
 // Board representations with rank / file 0d out to ease computation of overflows
-uint64_t rank_8 = 0x00FFFFFFFFFFFFFF;
-uint64_t rank_7 = 0xFF00FFFFFFFFFFFF;
 uint64_t rank_1 = 0xFFFFFFFFFFFFFF00;
 uint64_t rank_2 = 0xFFFFFFFFFFFF00FF;
+uint64_t rank_3 = ~0x0000000000FF0000;
 uint64_t rank_4 = ~0x00000000FF000000;
 uint64_t rank_5 = ~0x000000FF00000000;
+uint64_t rank_6 = ~0x0000FF0000000000;
+uint64_t rank_7 = 0xFF00FFFFFFFFFFFF;
+uint64_t rank_8 = 0x00FFFFFFFFFFFFFF;
 uint64_t file_a = 0xFEFEFEFEFEFEFEFE;
 uint64_t file_b = 0xFDFDFDFDFDFDFDFD;
+uint64_t file_c = ~0x0404040404040404;
+uint64_t file_d = ~0x0808080808080808;
+uint64_t file_e = ~0x1010101010101010;
+uint64_t file_f = ~0x2020202020202020;
 uint64_t file_h = 0x7F7F7F7F7F7F7F7F;
 uint64_t file_g = 0xBFBFBFBFBFBFBFBF;
 
@@ -75,8 +81,11 @@ void board_delete(board *b) {
     free(b);
 }
 
-void make_move_b(uint64_t from, uint64_t to, board* b);
-void make_move_w(uint64_t from, uint64_t to, board* b);
+char* make_move_b(uint64_t from, uint64_t to, board* b);
+char* make_move_w(uint64_t from, uint64_t to, board* b);
+int bit_pos_to_int(uint64_t pos);
+void  bit_pos_to_alg(uint64_t pos, char* pos_str);
+uint64_t perft(board* b, int depth);
 /* 
  * Returns all pieces for currently active side. 
 */
@@ -838,13 +847,15 @@ uint64_t move_board(board* b, uint64_t piece) {
  * from: single bit location being moved, to is destination bit location.
  * board: board to be updated 
 */
-void make_move_b(uint64_t from, uint64_t to, board* b) {
+char* make_move_b(uint64_t from, uint64_t to, board* b) {
     uint64_t pawn = b->pawn_b & from;
     uint64_t queen = b->queen_b & from;
     uint64_t king = b->king_b & from;
     uint64_t rook = b->rook_b & from;
     uint64_t knight = b->knight_b & from;
     uint64_t bishop = b->bishop_b & from;
+    char* move_str = malloc(4 * sizeof(char));
+    char* alg_str = malloc(3 * sizeof(char));
     
     if (pawn) {
         b->pawn_b &= ~from;
@@ -854,25 +865,43 @@ void make_move_b(uint64_t from, uint64_t to, board* b) {
             b->en_passant = 1;
             b->en_passant_target = (from >> 8); 
         }
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "p");
+        strncat(move_str, alg_str, 2);
     } else if (queen) {
         b->queen_b &= ~from;
         b->queen_b |= to;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "q");
+        strncat(move_str, alg_str, 2);
     } else if (king) {
         b->king_b &= ~from;
         b->king_b |= to;
         b->castle_b_l = 0;
         b->castle_b_r = 0;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "k");
+        strncat(move_str, alg_str, 2);
     } else if (rook) {
         b->rook_b &= ~from;
         b->rook_b |= to;
         b->castle_b_l = 0;
         b->castle_b_r = 0;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "r");
+        strncat(move_str, alg_str, 2);
     } else if (knight) {
         b->knight_b &= ~from;
         b->knight_b |= to;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "n");
+        strncat(move_str, alg_str, 2);
     } else if (bishop) {
         b->bishop_b &= ~from;
         b->bishop_b |= to;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "b");
+        strncat(move_str, alg_str, 2);
     }
 
     b->black &= ~from;
@@ -882,6 +911,55 @@ void make_move_b(uint64_t from, uint64_t to, board* b) {
         make_move_w(to, 0, b);
     }
 
+    free(alg_str);
+    return move_str;
+}
+
+int bit_pos_to_int(uint64_t pos) {
+    int val = 0;
+    while (pos) { 
+        pos = pos >> 1; 
+        val++;
+    }
+    return val;
+}
+
+void bit_pos_to_alg(uint64_t pos, char* pos_str) {
+    if (pos & file_a) {
+        snprintf(pos_str, 2 * sizeof(char), "a");
+    } else if (pos & file_b) {
+        snprintf(pos_str, 2 * sizeof(char), "b");
+    } else if (pos & file_c) {
+        snprintf(pos_str, 2 * sizeof(char), "c");
+    } else if (pos & file_d) {
+        snprintf(pos_str, 2 * sizeof(char), "d");
+    } else if (pos & file_e) {
+        snprintf(pos_str, 2 * sizeof(char), "e");
+    } else if (pos & file_f) {
+        snprintf(pos_str, 2 * sizeof(char), "f");
+    } else if (pos & file_g) {
+        snprintf(pos_str, 2 * sizeof(char), "g");
+    } else if (pos & file_h) {
+        snprintf(pos_str, 2 * sizeof(char), "h");
+    }
+
+    if (pos & rank_1) {
+        strncat(pos_str, "1", 1);
+    } else if (pos & rank_2) {
+        strncat(pos_str, "2", 1);
+    } else if (pos & rank_3) {
+        strncat(pos_str, "3", 1);
+    } else if (pos & rank_4) {
+        strncat(pos_str, "4", 1);
+    } else if (pos & rank_5) {
+        strncat(pos_str, "5", 1);
+    } else if (pos & rank_6) {
+        strncat(pos_str, "6", 1);
+    } else if (pos & rank_7) {
+        strncat(pos_str, "7", 1);
+    } else if (pos & rank_8) {
+        strncat(pos_str, "8", 1);
+    }
 }
 
 /* 
@@ -889,13 +967,15 @@ void make_move_b(uint64_t from, uint64_t to, board* b) {
  * from: single bit location being moved, to is destination bit location.
  * board: board to be updated 
 */
-void make_move_w(uint64_t from, uint64_t to, board* b) {
+char* make_move_w(uint64_t from, uint64_t to, board* b) {
     uint64_t pawn = b->pawn_w & from;
     uint64_t queen = b->queen_w & from;
     uint64_t king = b->king_w & from;
     uint64_t rook = b->rook_w & from;
     uint64_t knight = b->knight_w & from;
     uint64_t bishop = b->bishop_w & from;
+    char* move_str = malloc(4 * sizeof(char));
+    char* alg_str = malloc(3 * sizeof(char));
     
     if (pawn) {
         b->pawn_w &= ~from;
@@ -904,25 +984,43 @@ void make_move_w(uint64_t from, uint64_t to, board* b) {
             b->en_passant = 1;
             b->en_passant_target = (from << 8);
         }
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "P");
+        strncat(move_str, alg_str, 2);
     } else if (queen) {
         b->queen_w &= ~from;
         b->queen_w |= to;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "Q");
+        strncat(move_str, alg_str, 2);
     } else if (king) {
         b->king_w &= ~from;
         b->king_w |= to;
         b->castle_w_l = 0;
         b->castle_w_r = 0;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "K");
+        strncat(move_str, alg_str, 2);
     } else if (rook) {
         b->rook_w &= ~from;
         b->rook_w |= to;
         b->castle_w_l = 0;
         b->castle_w_r = 0;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "R");
+        strncat(move_str, alg_str, 2);
     } else if (knight) {
         b->knight_w &= ~from;
         b->knight_w |= to;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "N");
+        strncat(move_str, alg_str, 2);
     } else if (bishop) {
         b->bishop_w &= ~from;
         b->bishop_w |= to;
+        bit_pos_to_alg(to, alg_str);
+        snprintf(move_str, 2 * sizeof(char), "B");
+        strncat(move_str, alg_str, 2);
     }
     
     b->white &= ~from;
@@ -931,8 +1029,11 @@ void make_move_w(uint64_t from, uint64_t to, board* b) {
     if (b->black & to) {
         make_move_b(to, 0, b);
     }
+    free(alg_str);
+    return move_str;
 
 }
+
 
 /*
  * Undo move by calling moving in the reverse direction. 
@@ -953,10 +1054,14 @@ void undo_move(uint64_t from, uint64_t to, board* b, board* old_board) {
     board_copy(b, old_board);
 }
 
-void make_move(uint64_t from, uint64_t to, board* b) {
+void make_move(uint64_t from, uint64_t to, board* b, int print) {
     // Set en_passant to false to remove last move.
     b->en_passant = 0;
-    (b->turn) ? make_move_w(from, to, b): make_move_b(from, to, b);
+    char* move_str = (b->turn) ? make_move_w(from, to, b): make_move_b(from, to, b);
+    if (print) {
+        printf("%s ", move_str);
+    }
+    free(move_str);
     b->turn = !b->turn;
 }
 
@@ -1108,6 +1213,92 @@ int promotion(board* b, int side) {
     return (side) ? b->pawn_w & ~rank_8: b->pawn_b & ~rank_1;
 }
 
+uint64_t perft_divide(board* b, int depth) {
+    //printf("Board in perft %s\n", board_string(b));
+    if (!depth) return 1;
+    uint64_t nodes = 0;
+    uint64_t moves = get_legal_moves(b);
+    uint64_t move_pieces = (queen_move_board(moves, get_opp_side(b), get_curr_side(b)) \
+                                | knight_move_board(moves, get_opp_side(b))) & get_curr_side(b);
+   
+    board* b_copy = board_alloc();
+    board_copy(b_copy, b);
+
+    uint64_t from_mask = 1;
+    while (from_mask) {
+        uint64_t from = move_pieces & from_mask;
+        if (from) { 
+            uint64_t piece_moves = move_board(b, from) & moves;
+            if (piece_moves) {
+                uint64_t to_mask = 1;
+                while (to_mask) {
+                    uint64_t to = piece_moves & to_mask;
+                    if (to) {
+                        make_move(from, to, b, 1);
+                        if (promotion(b, !b->turn)) {
+                            if (b->turn) { 
+                                uint64_t promoted = b->pawn_w & ~rank_8;
+                                b->pawn_w &= rank_8;
+                                b->knight_w |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->knight_w &= ~promoted;
+                                b->queen_w |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->queen_w &= ~promoted;
+                                b->bishop_w |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->bishop_w &= ~promoted;
+                                b->rook_w |= promoted;
+                                nodes += perft(b, depth - 1);
+                            } else { 
+                                uint64_t promoted = b->pawn_b & ~rank_1;
+                                b->pawn_b &= rank_1;
+                                b->knight_b |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->knight_b &= ~promoted;
+                                b->queen_b |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->queen_b &= ~promoted;
+                                b->bishop_b |= promoted;
+                                nodes += perft(b, depth - 1);
+                                b->bishop_b &= ~promoted;
+                                b->rook_b |= promoted;
+                                nodes += perft(b, depth - 1);
+                            }
+                        }
+                        // If the current side is not in check after move, use node.
+                        else if (!in_check(b, !b->turn)) {
+                            uint64_t new_nodes = perft(b, depth - 1);
+                            printf("%" PRIu64 "\n", new_nodes);
+                            nodes += new_nodes;
+                        }
+                        board_copy(b, b_copy);
+                    }
+                    to_mask = to_mask << 1;
+                }
+            }
+        }
+        from_mask = from_mask << 1;
+    }
+
+    // Compute castling boards 
+    if (can_castle_l(b)) {
+        if (make_castle_l(b)) {
+            nodes += perft(b, depth - 1);
+            board_copy(b, b_copy);
+        }
+    } 
+    if (can_castle_r(b)) {
+        if (make_castle_r(b)) {
+            nodes += perft(b, depth - 1);
+            board_copy(b, b_copy);
+        }
+    }
+    board_delete(b_copy);
+
+    return nodes;
+}
+
 uint64_t perft(board* b, int depth) {
     //printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
@@ -1129,7 +1320,7 @@ uint64_t perft(board* b, int depth) {
                 while (to_mask) {
                     uint64_t to = piece_moves & to_mask;
                     if (to) {
-                        make_move(from, to, b);
+                        make_move(from, to, b, 0);
                         if (promotion(b, !b->turn)) {
                             if (b->turn) { 
                                 uint64_t promoted = b->pawn_w & ~rank_8;
