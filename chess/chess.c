@@ -925,39 +925,39 @@ int bit_pos_to_int(uint64_t pos) {
 }
 
 void bit_pos_to_alg(uint64_t pos, char* pos_str) {
-    if (pos & file_a) {
+    if (pos & ~file_a) {
         snprintf(pos_str, 2 * sizeof(char), "a");
-    } else if (pos & file_b) {
+    } else if (pos & ~file_b) {
         snprintf(pos_str, 2 * sizeof(char), "b");
-    } else if (pos & file_c) {
+    } else if (pos & ~file_c) {
         snprintf(pos_str, 2 * sizeof(char), "c");
-    } else if (pos & file_d) {
+    } else if (pos & ~file_d) {
         snprintf(pos_str, 2 * sizeof(char), "d");
-    } else if (pos & file_e) {
+    } else if (pos & ~file_e) {
         snprintf(pos_str, 2 * sizeof(char), "e");
-    } else if (pos & file_f) {
+    } else if (pos & ~file_f) {
         snprintf(pos_str, 2 * sizeof(char), "f");
-    } else if (pos & file_g) {
+    } else if (pos & ~file_g) {
         snprintf(pos_str, 2 * sizeof(char), "g");
-    } else if (pos & file_h) {
+    } else if (pos & ~file_h) {
         snprintf(pos_str, 2 * sizeof(char), "h");
     }
 
-    if (pos & rank_1) {
+    if (pos & ~rank_1) {
         strncat(pos_str, "1", 1);
-    } else if (pos & rank_2) {
+    } else if (pos & ~rank_2) {
         strncat(pos_str, "2", 1);
-    } else if (pos & rank_3) {
+    } else if (pos & ~rank_3) {
         strncat(pos_str, "3", 1);
-    } else if (pos & rank_4) {
+    } else if (pos & ~rank_4) {
         strncat(pos_str, "4", 1);
-    } else if (pos & rank_5) {
+    } else if (pos & ~rank_5) {
         strncat(pos_str, "5", 1);
-    } else if (pos & rank_6) {
+    } else if (pos & ~rank_6) {
         strncat(pos_str, "6", 1);
-    } else if (pos & rank_7) {
+    } else if (pos & ~rank_7) {
         strncat(pos_str, "7", 1);
-    } else if (pos & rank_8) {
+    } else if (pos & ~rank_8) {
         strncat(pos_str, "8", 1);
     }
 }
@@ -1213,6 +1213,10 @@ int promotion(board* b, int side) {
     return (side) ? b->pawn_w & ~rank_8: b->pawn_b & ~rank_1;
 }
 
+/*
+ * Copy of perft function with print at first level. Allows analysis of number 
+ * of nodes generated after the first move. 
+*/
 uint64_t perft_divide(board* b, int depth) {
     //printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
@@ -1299,6 +1303,10 @@ uint64_t perft_divide(board* b, int depth) {
     return nodes;
 }
 
+/*
+ * Perft testing function. Evaluates entire search tree with no pruning and counts 
+ * number of nodes generated. 
+*/
 uint64_t perft(board* b, int depth) {
     //printf("Board in perft %s\n", board_string(b));
     if (!depth) return 1;
@@ -1321,6 +1329,9 @@ uint64_t perft(board* b, int depth) {
                     uint64_t to = piece_moves & to_mask;
                     if (to) {
                         make_move(from, to, b, 0);
+                        // Promotion requires 4 separate calls to make move. 
+                        // Might be able to change to adding one of each piece to board
+                        // when pawn on rank_7 or rank_1.  
                         if (promotion(b, !b->turn)) {
                             if (b->turn) { 
                                 uint64_t promoted = b->pawn_w & ~rank_8;
@@ -1383,6 +1394,10 @@ uint64_t perft(board* b, int depth) {
     return nodes;
 }
 
+/* 
+ * Not yet implemented. Will being standard game and start loop of asking for 
+ * user input. Moves will be validated using move gen. 
+ */
 void play_game() {
     board* b = board_alloc();
     set_standard(b);
@@ -1408,6 +1423,7 @@ void parse_fen(board* b, char *fen) {
         fields[i] = token;
     }
     
+    // Mask to iterate through provided fen one position at a time. 
     uint64_t loc_mask = 0x0100000000000000;
     for (int i = 0; i < strlen(fields[0]); i++) {
         char c = fields[0][i];

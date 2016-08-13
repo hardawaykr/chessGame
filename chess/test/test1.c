@@ -3,7 +3,7 @@
 int main(void) {
     board* perft_board = board_alloc();
     set_standard(perft_board); 
-    uint64_t perft_test_1 = perft_divide(perft_board, 5); 
+    uint64_t perft_test_1 = perft_divide(perft_board, 6); 
     if (perft_test_1 != 8902) {
         printf("Error invalid perft test 1 %" PRIu64 "\n", perft_test_1);
     } else {
