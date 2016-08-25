@@ -305,7 +305,7 @@ uint64_t pawn_b_move_board(uint64_t pawn, uint64_t white, uint64_t black) {
     // Forward one
     uint64_t pos_2 = (pawn >> 8) & ~white;
     // Right diagonal attack
-    uint64_t pos_3 = ((pawn & file_h) << 7) & white;
+    uint64_t pos_3 = ((pawn & file_h) >> 7) & white;
     // Two step forward, & with pos_2 to make sure intermediate space is free.
     uint64_t pos_4 = ((pawn & ~rank_7) >> 8 & ~black & ~white) >> 8 & ~white;
 
@@ -1240,34 +1240,50 @@ uint64_t perft_divide(board* b, int depth) {
                     if (to) {
                         make_move(from, to, b, 1);
                         if (promotion(b, !b->turn)) {
-                            if (b->turn) { 
+                            if (!b->turn) { 
                                 uint64_t promoted = b->pawn_w & ~rank_8;
                                 b->pawn_w &= rank_8;
                                 b->knight_w |= promoted;
-                                nodes += perft(b, depth - 1);
+                                uint64_t new_nodes = perft(b, depth - 1);
+                                printf("%" PRIu64 "\n", new_nodes);
+                                nodes += new_nodes;
                                 b->knight_w &= ~promoted;
                                 b->queen_w |= promoted;
-                                nodes += perft(b, depth - 1);
+                                new_nodes = perft(b, depth - 1);
+                                printf("%" PRIu64 "\n", new_nodes);
+                                nodes += new_nodes;
                                 b->queen_w &= ~promoted;
                                 b->bishop_w |= promoted;
-                                nodes += perft(b, depth - 1);
+                                new_nodes = perft(b, depth - 1);
+                                printf("%" PRIu64 "\n", new_nodes);
+                                nodes += new_nodes;
                                 b->bishop_w &= ~promoted;
                                 b->rook_w |= promoted;
-                                nodes += perft(b, depth - 1);
+                                new_nodes = perft(b, depth - 1);
+                                printf("%" PRIu64 "\n", new_nodes);
+                                nodes += new_nodes;
                             } else { 
                                 uint64_t promoted = b->pawn_b & ~rank_1;
                                 b->pawn_b &= rank_1;
                                 b->knight_b |= promoted;
-                                nodes += perft(b, depth - 1);
+                                uint64_t new_nodes = perft(b, depth - 1);
+                                printf("%" PRIu64 "\n", new_nodes);
+                                nodes += new_nodes;
                                 b->knight_b &= ~promoted;
                                 b->queen_b |= promoted;
-                                nodes += perft(b, depth - 1);
+                                new_nodes = perft(b, depth - 1);
+                                printf("%" PRIu64 "\n", new_nodes);
+                                nodes += new_nodes;
                                 b->queen_b &= ~promoted;
                                 b->bishop_b |= promoted;
-                                nodes += perft(b, depth - 1);
+                                new_nodes = perft(b, depth - 1);
+                                printf("%" PRIu64 "\n", new_nodes);
+                                nodes += new_nodes;
                                 b->bishop_b &= ~promoted;
                                 b->rook_b |= promoted;
-                                nodes += perft(b, depth - 1);
+                                new_nodes = perft(b, depth - 1);
+                                printf("%" PRIu64 "\n", new_nodes);
+                                nodes += new_nodes;
                             }
                         }
                         // If the current side is not in check after move, use node.
@@ -1333,7 +1349,7 @@ uint64_t perft(board* b, int depth) {
                         // Might be able to change to adding one of each piece to board
                         // when pawn on rank_7 or rank_1.  
                         if (promotion(b, !b->turn)) {
-                            if (b->turn) { 
+                            if (!b->turn) { 
                                 uint64_t promoted = b->pawn_w & ~rank_8;
                                 b->pawn_w &= rank_8;
                                 b->knight_w |= promoted;

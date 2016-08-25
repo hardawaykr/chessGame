@@ -3,7 +3,7 @@
 int main(void) {
     board* perft_board = board_alloc();
     set_standard(perft_board); 
-    uint64_t perft_test_1 = perft_divide(perft_board, 6); 
+    uint64_t perft_test_1 = perft_divide(perft_board, 3); 
     if (perft_test_1 != 8902) {
         printf("Error invalid perft test 1 %" PRIu64 "\n", perft_test_1);
     } else {
@@ -22,6 +22,29 @@ int main(void) {
     } else {
         printf("Success. Second perft test success. Pos 3 depth 2\n");
     }
+
+    char fen_10[73] = "n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1";
+    parse_fen(perft_board, fen_10);
+    printf("\nboard is %s\n", board_string(perft_board));
+    perft_board->castle_w_l = 0;
+    perft_board->castle_w_r = 0;
+    perft_board->castle_b_l = 0;
+    perft_board->castle_b_r = 0;
+    printf("\n\n\nDivide test\n\n");
+    uint64_t perft_test_10 = perft_divide(perft_board, 1); 
+    if (perft_test_10 != 360503) {
+        printf("Error invalid perft test divide test pos, %" PRIu64 "\n", perft_test_10);
+    } else {
+        printf("Success. Second perft test success. Divide\n");
+    }
+
+    // Pawn corner attack test 
+    char fen_corner[73] = "8/8/8/8/8/8/6p1/7N b - - 0 1";
+    parse_fen(perft_board, fen_corner);
+    printf("\nboard is %s\n", board_string(perft_board));
+    printf("\n\n\nCorner test\n\n");
+    uint64_t corner_pawn_moves = pawn_b_move_board(perft_board->pawn_b, perft_board->white, perft_board->black);
+    printf("Corner test result, %" PRIu64 "\n", corner_pawn_moves);
 
     char fen_3[73] = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1";
     parse_fen(perft_board, fen_3);
